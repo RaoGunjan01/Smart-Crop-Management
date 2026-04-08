@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 ---
 title: Smart Crop Management Sytem
 emoji: 🌾
