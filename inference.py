@@ -130,7 +130,6 @@ def run_task(client: OpenAI, model: str, task: str, seed: int) -> tuple[float, i
 
         act_arr = agent.act(obs, st).tolist() if llm_act is None else llm_act
 
-        env.set_pending_fertilizer({"a": 0.0, "b": 0.0, "c": 0.0})
         obs, reward, terminated, truncated, step_info = env.step(np.array(act_arr, dtype=np.int64))
         done = bool(terminated or truncated)
         steps += 1

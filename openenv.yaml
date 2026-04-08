@@ -30,21 +30,18 @@ reward:
 tasks:
   - name: easy
     difficulty: 1
-    description: 1 zone, 30 days, no sensor noise, 10000L budget
-    graders:
-      - name: episode_grade
-        entrypoint: irrigation_env.grader:grade_episode
+    description: "1 zone, 30 days, no sensor noise, 10000L water budget"
+    grader:
+      entrypoint: "irrigation_env.grader:grade_episode"
   - name: medium
     difficulty: 2
-    description: 4 zones, 60 days, sensor noise 0.05, 8000L budget
-    graders:
-      - name: episode_grade
-        entrypoint: irrigation_env.grader:grade_episode
+    description: "4 zones, 60 days, sensor noise 0.05, 8000L water budget"
+    grader:
+      entrypoint: "irrigation_env.grader:grade_episode"
   - name: hard
     difficulty: 3
-    description: 8 zones, 90 days, sensor noise 0.10, 4000L budget, sensor failures
-    graders:
-      - name: episode_grade
-        entrypoint: irrigation_env.grader:grade_episode
+    description: "8 zones, 90 days, sensor noise 0.10, 4000L budget, sensor failures"
+    grader:
+      entrypoint: "irrigation_env.grader:grade_episode"
 entrypoint: api.main:app
 port: 8000
