@@ -1,0 +1,41 @@
+name: precision-irrigation-scheduling
+version: "1.0.0"
+description: >
+  A multi-zone crop irrigation scheduling environment where an AI agent
+  decides when and how much to water crops based on soil moisture,
+  weather forecasts, and water budget constraints.
+tags:
+  - openenv
+  - agriculture
+  - reinforcement-learning
+observation_space:
+  type: Box
+  shape: variable (n_zones * 4 + 8)
+  dtype: float32
+  description: >
+    Per-zone: soil_moisture, crop_growth_stage, stress_index, 
+    days_since_irrigation. Global: temp_c, humidity, rain_forecast_mm,
+    evapotranspiration, water_budget_remaining, cost_per_liter,
+    day_of_season, time_of_day.
+action_space:
+  type: MultiDiscrete
+  description: >
+    One discrete action per zone (0=SKIP, 1=IRRIGATE_LOW, 
+    2=IRRIGATE_MED, 3=IRRIGATE_HIGH, 4=IRRIGATE_FLOOD) 
+    plus one global action slot (5=EMERGENCY, 6=PAUSE_ALL).
+reward:
+  type: float
+  range: [-inf, +inf]
+  terminal_bonus: 1.0
+tasks:
+  - name: easy
+    difficulty: 1
+    description: 1 zone, 30 days, no sensor noise, 10000L budget
+  - name: medium
+    difficulty: 2
+    description: 4 zones, 60 days, sensor noise 0.05, 8000L budget
+  - name: hard
+    difficulty: 3
+    description: 8 zones, 90 days, sensor noise 0.10, 4000L budget, sensor failures
+entrypoint: api.main:app
+port: 8000
