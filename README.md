@@ -1,13 +1,4 @@
 
----
-title: Smart Crop Management Sytem
-emoji: 🌾
-colorFrom: green
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
----
 
 # Smart Crop Management Sytem
 
