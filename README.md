@@ -1,6 +1,6 @@
 # Smart Crop Management Sytem
 
-A complete **OpenEnv-compatible** Gymnasium environment for smart crop irrigation and nutrient-aware growth simulation. Designed for demo use, it simulates multi-zone soil moisture dynamics, weather, and crop growth.
+A complete **OpenEnv-compatible** Gymnasium environment for smart crop irrigation and nutrient-aware growth simulation. Designed for demo use, it simulates multi-zone soil moisture dynamics, weather, and crop  growth.
 
 ---
 
