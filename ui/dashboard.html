@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Crop Management Sytem</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080c14;
+            --sidebar: #0d1422;
+            --card: #111827;
+            --card2: #162032;
+            --accent-green: #00e5a0;
+            --accent-blue: #4d9fff;
+            --accent-yellow: #f5c518;
+            --accent-orange: #ff8c42;
+            --accent-red: #ff4d6d;
+            --accent-purple: #a855f7;
+            --text-primary: #e8f0ff;
+            --text-secondary: #6b7fa3;
+            --border: #1e2d45;
+            --border-bright: #2a3d5a;
+            --glass: rgba(17, 24, 39, 0.6);
+            --glass-2: rgba(22, 32, 50, 0.65);
+            --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+            --shadow-neu: inset 1px 1px 0 rgba(255,255,255,0.03), inset -1px -1px 0 rgba(0,0,0,0.3);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background:
+                radial-gradient(900px 450px at -10% -20%, rgba(77,159,255,0.1), transparent 60%),
+                radial-gradient(700px 360px at 110% -10%, rgba(0,229,160,0.08), transparent 60%),
+                var(--bg);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #recomText { display: none; }
+
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        aside {
+            width: 280px;
+            background: linear-gradient(180deg, rgba(13,20,34,0.92), rgba(10,16,28,0.92));
+            border-right: 1px solid var(--border);
+            padding: 1.5rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            flex-shrink: 0;
+            overflow-y: auto;
+            backdrop-filter: blur(12px);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+        .brand-sub { font-size: 0.6rem; color: var(--text-secondary); letter-spacing: 0.12em; font-family: 'JetBrains Mono', monospace; }
+
+        .sidebar-section {
+            background: var(--glass);
+            padding: 1rem;
+            border-radius: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-neu);
+            backdrop-filter: blur(10px);
+            animation: fade-up 0.35s ease both;
+        }
+        .sec-title {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .sec-title::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); display: block; }
+
+        label { font-size: 0.62rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.06em; }
+
+        select {
+            background: #0a1120;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.55rem 0.7rem;
+            border-radius: 0.55rem;
+            font-size: 0.82rem;
+            outline: none;
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100%;
+            box-shadow: var(--shadow-neu);
+        }
+        select:focus { border-color: var(--accent-blue); }
+
+        button {
+            padding: 0.65rem 0.8rem;
+            border-radius: 0.55rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.68rem;
+            transition: all 0.18s;
+            letter-spacing: 0.06em;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        button:hover { transform: translateY(-1px); }
+        .btn-reset { background: var(--accent-green); color: #003d28; }
+        .btn-reset:hover { filter: brightness(1.15); }
+        .btn-auto-step { background: transparent; border: 1.5px solid var(--accent-blue); color: var(--accent-blue); }
+        .btn-auto-step:hover { background: rgba(77,159,255,0.1); }
+        .btn-manual { background: transparent; border: 1.5px solid var(--accent-green); color: var(--accent-green); }
+        .btn-manual:hover { background: rgba(0,229,160,0.1); }
+        .btn-loop { background: var(--card2); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-loop:hover { border-color: var(--border-bright); }
+        .btn-extreme { background: rgba(255,77,109,0.08); border: 1.5px solid var(--accent-red); color: var(--accent-red); }
+        .btn-extreme:hover { background: rgba(255,77,109,0.15); }
+        .btn-extreme.active { background: var(--accent-red); color: white; animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(255,77,109,0.4)} 70%{box-shadow:0 0 0 8px rgba(255,77,109,0)} }
+        .btn-rl { background: transparent; border: 1.5px solid white; color: white; }
+        .btn-rl:hover { background: rgba(255,255,255,0.05); }
+        .btn-running { background: rgba(255,255,255,0.04); color: var(--text-secondary); cursor: default; }
+        .green { color: var(--accent-green) !important; }
+
+        .sidebar-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+        .stat-label { font-size: 0.6rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+        .stat-val { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
+        .stat-val.green { color: var(--accent-green); }
+
+        main {
+            flex: 1;
+            padding: 1.35rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.05rem;
+            overflow-y: auto;
+            min-width: 0;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 0.3rem;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 0.8rem;
+            padding: 0.3rem;
+            box-shadow: var(--shadow-neu);
+            backdrop-filter: blur(8px);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 0.5rem 0.8rem;
+            border-radius: 0.4rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.15s;
+        }
+        .tab-btn.active { background: var(--card2); color: var(--text-primary); }
+        .tab-btn:hover:not(.active) { color: var(--text-primary); }
+
+        .advice-bar {
+            display: flex; align-items: center; gap: 0.6rem;
+            background: linear-gradient(120deg, rgba(77,159,255,0.12), rgba(22,32,50,0.7));
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 0.8rem;
+            padding: 0.65rem 1rem;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(10px);
+        }
+        .advice-tag {
+            font-size: 0.55rem; font-weight: 700; background: var(--accent-blue);
+            color: #0a1a30; padding: 0.15rem 0.4rem; border-radius: 0.2rem;
+            white-space: nowrap; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em;
+        }
+        #recomText { font-size: 0.78rem; color: var(--text-secondary); flex: 1; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.75rem;
+        }
+        .metric-card {
+            background: linear-gradient(160deg, var(--glass), rgba(17,24,39,0.8));
+            border: 1px solid var(--border);
+            border-radius: 0.85rem;
+            padding: 0.9rem;
+            display: flex; flex-direction: column; gap: 0.3rem;
+            box-shadow: var(--shadow-neu);
+            backdrop-filter: blur(8px);
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-bright);
+        }
+        .metric-val { font-size: 1.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .metric-sub { font-size: 0.62rem; color: var(--text-secondary); }
+
+        .tab-page { display: none; flex-direction: column; gap: 1rem; }
+        .tab-page.active { display: flex; }
+
+        .mid-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; }
+        .bottom-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        .chart-card {
+            background: linear-gradient(160deg, var(--glass), rgba(17,24,39,0.85));
+            border: 1px solid var(--border);
+            border-radius: 0.95rem;
+            padding: 1rem;
+            display: flex; flex-direction: column; gap: 0.6rem;
+            box-shadow: var(--shadow-neu);
+            backdrop-filter: blur(10px);
+        }
+        .card-title {
+            font-size: 0.62rem; color: var(--text-secondary);
+            text-transform: uppercase; font-weight: 700;
+            letter-spacing: 0.1em; font-family: 'JetBrains Mono', monospace;
+        }
+
+        .zone-controls { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }
+        .zone-ctrl-box {
+            background: var(--glass-2); border: 1px solid var(--border); border-radius: 0.65rem;
+            padding: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; min-width: 120px;
+            box-shadow: var(--shadow-neu);
+        }
+        .toggle-group { display: flex; gap: 0.25rem; }
+        .toggle-btn {
+            flex: 1; padding: 0.3rem 0.2rem; border-radius: 0.3rem; background: #0a1120;
+            border: 1px solid var(--border); color: var(--text-secondary); font-size: 0.6rem;
+            font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .toggle-btn.active { background: rgba(77,159,255,0.15); border-color: var(--accent-blue); color: var(--accent-blue); }
+        .toggle-btn.active.green { background: rgba(0,229,160,0.15); border-color: var(--accent-green); color: var(--accent-green); }
+
+        .reward-card {
+            background: linear-gradient(155deg, rgba(0,229,160,0.06), var(--glass));
+            border: 1px solid var(--border);
+            border-radius: 0.95rem;
+            padding: 1rem;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: var(--shadow-neu);
+            backdrop-filter: blur(10px);
+        }
+        .reward-big { font-size: 3rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent-green); }
+
+        .logs-box {
+            background: linear-gradient(160deg, var(--glass), rgba(17,24,39,0.85));
+            border: 1px solid var(--border);
+            border-radius: 0.95rem;
+            padding: 1rem;
+            display: flex; flex-direction: column; gap: 0.6rem;
+            box-shadow: var(--shadow-neu);
+            backdrop-filter: blur(10px);
+        }
+        .logs-title { display: flex; justify-content: space-between; align-items: center; }
+        .logs-table-wrap { overflow-y: auto; max-height: 200px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        th { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; color: var(--text-secondary); text-transform: uppercase; padding: 0.4rem 0.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+        td { padding: 0.35rem 0.5rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.03); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; }
+        td.pos { color: var(--accent-green); }
+        td.neg { color: var(--accent-red); }
+
+        .nutrient-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .nutrient-card {
+            background: linear-gradient(160deg, var(--glass-2), rgba(22,32,50,0.9));
+            border: 1px solid var(--border);
+            border-radius: 0.8rem;
+            padding: 0.9rem;
+            box-shadow: var(--shadow-neu);
+        }
+        .nutrient-name { font-size: 0.62rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; font-family: 'JetBrains Mono', monospace; margin-bottom: 0.4rem; }
+        .nutrient-val { font-size: 1.3rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .nutrient-bar-wrap { background: rgba(255,255,255,0.05); border-radius: 99px; height: 5px; margin-top: 0.4rem; overflow: hidden; }
+        .nutrient-bar { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+        .nutrient-status { font-size: 0.6rem; margin-top: 0.35rem; font-weight: 600; }
+        .status-good { color: var(--accent-green); }
+        .status-low { color: var(--accent-yellow); }
+        .status-deficient { color: var(--accent-red); }
+
+        .nutrient-rec-box {
+            background: rgba(168, 85, 247, 0.07);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.85rem;
+            padding: 1rem;
+            box-shadow: var(--shadow-neu);
+        }
+        .rec-title { font-size: 0.65rem; color: var(--accent-purple); text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; font-family: 'JetBrains Mono', monospace; margin-bottom: 0.6rem; }
+        .rec-item { font-size: 0.75rem; color: var(--text-secondary); padding: 0.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .rec-item:last-child { border-bottom: none; }
+        .rec-item strong { color: var(--accent-purple); }
+
+        .crop-zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
+        .crop-zone-card {
+            background: linear-gradient(160deg, var(--glass-2), rgba(22,32,50,0.9));
+            border: 1px solid var(--border);
+            border-radius: 0.85rem;
+            padding: 1rem;
+            display: flex; flex-direction: column; gap: 0.6rem;
+            box-shadow: var(--shadow-neu);
+        }
+        .crop-zone-header { display: flex; justify-content: space-between; align-items: center; }
+        .crop-zone-name { font-size: 0.85rem; font-weight: 600; }
+        .crop-badge {
+            font-size: 0.58rem; padding: 0.2rem 0.5rem; border-radius: 99px; font-weight: 700;
+            font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+        }
+        .stage-germination { background: rgba(245,197,24,0.15); color: var(--accent-yellow); }
+        .stage-vegetative { background: rgba(0,229,160,0.15); color: var(--accent-green); }
+        .stage-flowering { background: rgba(168,85,247,0.15); color: var(--accent-purple); }
+        .stage-mature { background: rgba(255,140,66,0.15); color: var(--accent-orange); }
+
+        .crop-stat { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; }
+        .crop-stat-label { color: var(--text-secondary); }
+        .crop-stat-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+        .progress-wrap { background: rgba(255,255,255,0.05); border-radius: 99px; height: 4px; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+
+        .yield-projector {
+            background: linear-gradient(135deg, rgba(0,229,160,0.08), rgba(77,159,255,0.08));
+            border: 1px solid var(--border);
+            border-radius: 0.95rem;
+            padding: 1rem;
+            box-shadow: var(--shadow-neu);
+        }
+        .yield-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 0.6rem; }
+        .yield-stat { text-align: center; }
+        .yield-val { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .yield-label { font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.2rem; }
+
+        .weather-timeline {
+            display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.4rem;
+        }
+        .weather-day {
+            min-width: 80px;
+            background: linear-gradient(160deg, var(--glass-2), rgba(22,32,50,0.9));
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 0.7rem 0.5rem;
+            text-align: center;
+            display: flex; flex-direction: column; gap: 0.3rem;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-neu);
+        }
+        .weather-day.today { border-color: var(--accent-blue); }
+        .w-day-label { font-size: 0.6rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+        .w-icon { font-size: 1.4rem; }
+        .w-temp { font-size: 0.8rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .w-rain { font-size: 0.62rem; color: var(--accent-blue); }
+
+        .alert-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .alert-item {
+            display: flex; align-items: flex-start; gap: 0.6rem;
+            background: var(--card2);
+            border-radius: 0.4rem;
+            padding: 0.7rem 0.9rem;
+            border-left: 3px solid transparent;
+            font-size: 0.75rem;
+        }
+        .alert-item.critical { border-left-color: var(--accent-red); }
+        .alert-item.warning { border-left-color: var(--accent-yellow); }
+        .alert-item.info { border-left-color: var(--accent-blue); }
+        .alert-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+        .alert-body { display: flex; flex-direction: column; gap: 0.1rem; }
+        .alert-title { font-weight: 600; color: var(--text-primary); }
+        .alert-desc { color: var(--text-secondary); font-size: 0.68rem; }
+        .alert-time { font-size: 0.58rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; margin-top: 0.2rem; }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        /* Scenario config modal */
+        .scenario-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+        }
+        .scenario-backdrop.show { display: flex; }
+        .scenario-modal {
+            width: 100%;
+            max-width: 520px;
+            background: linear-gradient(160deg, var(--glass-2), rgba(8,12,20,0.98));
+            border-radius: 1rem;
+            border: 1px solid var(--border-bright);
+            box-shadow: 0 22px 50px rgba(0,0,0,0.6);
+            padding: 1.4rem 1.6rem 1.2rem;
+            animation: fade-up 0.28s ease both;
+        }
+        .scenario-header {
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            margin-bottom:0.8rem;
+        }
+        .scenario-title {
+            font-size:0.9rem;
+            font-weight:600;
+        }
+        .scenario-sub {
+            font-size:0.7rem;
+            color:var(--text-secondary);
+            margin-top:0.15rem;
+        }
+        .scenario-close {
+            background:transparent;
+            border:none;
+            color:var(--text-secondary);
+            font-size:0.85rem;
+            padding:0.1rem;
+            cursor:pointer;
+        }
+        .scenario-grid {
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:0.75rem 1rem;
+            margin-top:0.6rem;
+        }
+        .scenario-actions {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-top:1rem;
+            gap:0.5rem;
+        }
+        .scenario-hint {
+            font-size:0.65rem;
+            color:var(--text-secondary);
+        }
+        .btn-primary {
+            background:var(--accent-green);
+            color:#003d28;
+        }
+        .btn-primary:hover { filter:brightness(1.15); }
+        .btn-outline {
+            background:transparent;
+            border:1.5px solid var(--accent-blue);
+            color:var(--accent-blue);
+        }
+        .btn-outline:hover { background:rgba(77,159,255,0.1); }
+
+        .welcome-backdrop {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(900px 450px at 10% 20%, rgba(77,159,255,0.16), transparent 60%),
+                radial-gradient(700px 360px at 90% 10%, rgba(0,229,160,0.12), transparent 60%),
+                rgba(0,0,0,0.62);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 70;
+            padding: 1.25rem;
+        }
+        .welcome-modal {
+            width: min(720px, 100%);
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(17,24,39,0.82), rgba(22,32,50,0.76));
+            border-radius: 1rem;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(14px);
+            padding: 1.25rem 1.25rem 1.1rem;
+            animation: fade-up 0.35s ease both;
+        }
+        .welcome-title {
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            font-size: 1.15rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .welcome-title span {
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            padding: 0.2rem 0.5rem;
+            border-radius: 999px;
+            background: rgba(0,229,160,0.10);
+            border: 1px solid rgba(0,229,160,0.22);
+        }
+        .welcome-desc {
+            margin-top: 0.55rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.35;
+        }
+        .welcome-actions {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .nudge-toast {
+            position: fixed;
+            right: 16px;
+            top: 16px;
+            width: min(420px, calc(100vw - 32px));
+            background: linear-gradient(180deg, rgba(17,24,39,0.88), rgba(22,32,50,0.82));
+            border: 1px solid var(--border-bright);
+            border-radius: 0.9rem;
+            box-shadow: var(--shadow-soft);
+            padding: 0.9rem 1rem;
+            z-index: 80;
+            display: none;
+            animation: fade-up 0.28s ease both;
+        }
+        .nudge-title { font-weight: 700; font-size: 0.85rem; }
+        .nudge-desc { color: var(--text-secondary); font-size: 0.78rem; margin-top: 0.25rem; line-height: 1.35; }
+        .nudge-actions { margin-top: 0.7rem; display:flex; justify-content:flex-end; gap:0.5rem; }
+
+        .pulse-outline {
+            box-shadow: 0 0 0 0 rgba(77,159,255,0.45);
+            animation: pulse 1.2s ease-out 3;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(77,159,255,0.45); }
+            100% { box-shadow: 0 0 0 14px rgba(77,159,255,0.0); }
+        }
+
+        .range-wrap { display:flex; flex-direction:column; gap:0.35rem; }
+        input[type="range"] { width:100%; }
+        .range-row { display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:0.62rem; color:var(--text-secondary); }
+
+        .thinking {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--accent-blue);
+            display: inline-block;
+            margin-left: 0.4rem;
+            animation: blink 1s steps(2, start) infinite;
+            opacity: 0;
+            transform: translateY(-2px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .thinking.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @keyframes blink { to { visibility: hidden; } }
+
+        @media (max-width: 1200px) {
+            .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+            .mid-grid, .bottom-grid, .two-col { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            aside { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Welcome modal -->
+<div id="welcomeBackdrop" class="welcome-backdrop">
+    <div class="welcome-modal">
+        <div class="welcome-title">
+            Smart Crop Management Sytem <span>DEMO</span>
+        </div>
+        <div class="welcome-desc">
+            Configure your field scenario, then watch the agent manage irrigation and nutrients day-by-day.
+        </div>
+        <div class="welcome-actions">
+            <button class="btn-primary" id="welcomeGoBtn">Go</button>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-run nudge toast (non-blocking) -->
+<div id="autoRunNudge" class="nudge-toast" role="dialog" aria-live="polite">
+    <div class="nudge-title">Ready to simulate?</div>
+    <div class="nudge-desc">Tip: click <b>Auto Run Loop</b> to let the agent run continuously. You can still step manually if you want.</div>
+    <div class="nudge-actions">
+        <button class="btn-outline" id="nudgeDismissBtn">Not now</button>
+        <button class="btn-primary" id="nudgeGoLoopBtn">Auto Run</button>
+    </div>
+</div>
+
+<!-- Scenario configuration modal -->
+<div id="scenarioBackdrop" class="scenario-backdrop">
+    <div class="scenario-modal">
+        <div class="scenario-header">
+            <div>
+                <div class="scenario-title">Configure Field Scenario</div>
+                <div class="scenario-sub">Choose crop, season, and starting conditions before the AI begins irrigating.</div>
+            </div>
+            <button class="scenario-close" onclick="closeScenarioModal()">✕</button>
+        </div>
+        <div class="scenario-grid">
+            <div>
+                <label>Crop</label>
+                <select id="scenarioCrop" style="margin-top:0.3rem;">
+                    <option value="auto">Auto (from difficulty)</option>
+                    <option value="wheat">Wheat</option>
+                    <option value="corn">Corn</option>
+                    <option value="rice">Rice</option>
+                    <option value="tomato">Tomato</option>
+                    <option value="soybean">Soybean</option>
+                </select>
+            </div>
+            <div>
+                <label>Season</label>
+                <select id="scenarioSeason" style="margin-top:0.3rem;">
+                    <option value="spring">Spring</option>
+                    <option value="summer" selected>Summer</option>
+                    <option value="monsoon">Monsoon</option>
+                    <option value="winter">Winter</option>
+                </select>
+            </div>
+            <div>
+                <label>Soil Moisture Level</label>
+                <select id="scenarioMoisture" style="margin-top:0.3rem;">
+                    <option value="dry">Dry (stressed)</option>
+                    <option value="optimal" selected>Optimal (target)</option>
+                    <option value="wet">Wet (risk of waterlogging)</option>
+                </select>
+            </div>
+            <div>
+                <label>Soil Nutrients (crop-specific)</label>
+                <div id="scenarioNutrientSliders" style="margin-top:0.3rem;display:flex;flex-direction:column;gap:0.55rem;"></div>
+            </div>
+            <div>
+                <label>Land Area (ha)</label>
+                <select id="scenarioLand" style="margin-top:0.3rem;">
+                    <option value="1">1 ha (small plot)</option>
+                    <option value="5" selected>5 ha (demo farm)</option>
+                    <option value="10">10 ha</option>
+                    <option value="50">50 ha (large farm)</option>
+                </select>
+            </div>
+        </div>
+        <div class="scenario-actions">
+            <div class="scenario-hint" id="scenarioSummary">Wheat · Summer · Optimal moisture · Balanced nutrients</div>
+            <div style="display:flex;gap:0.4rem;">
+                <button class="btn-outline" onclick="resetScenarioDefaults()">Reset</button>
+                <button class="btn-primary" onclick="applyScenarioAndStart()">Start Simulation</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<aside>
+    <div class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        <div>
+            <div>SMART CROP</div>
+            <div class="brand-sub">MANAGEMENT SYTEM</div>
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sec-title">ENVIRONMENT</div>
+        <div style="margin-bottom:0.6rem;">
+            <button class="btn-loop" style="width:100%;text-align:center" onclick="openScenarioModal()">🎛 Configure Scenario</button>
+        </div>
+        <div>
+            <label>Task Difficulty</label>
+            <select id="difficulty" style="margin-top:0.3rem;">
+                <option value="easy">Easy — 1 Zone (Wheat)</option>
+                <option value="medium">Medium — 4 Zones (Mixed)</option>
+                <option value="hard" selected>Hard — 8 Zones (Mixed)</option>
+            </select>
+        </div>
+        <div>
+            <label>Crop Type Override</label>
+            <select id="cropOverride" style="margin-top:0.3rem;">
+                <option value="auto">Auto (from task)</option>
+                <option value="wheat">Wheat</option>
+                <option value="corn">Corn</option>
+                <option value="rice">Rice</option>
+                <option value="tomato">Tomato</option>
+                <option value="soybean">Soybean</option>
+            </select>
+        </div>
+        <button class="btn-reset" id="resetBtn">⟳ Reset Environment</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;">
+            <button class="btn-manual" id="manualStepBtn">Manual Step</button>
+            <button class="btn-auto-step" id="autoStepBtn">Auto Step (AI)</button>
+        </div>
+        <button class="btn-loop" id="loopBtn">▶ Auto Run Loop</button>
+        <div class="sidebar-stats">
+            <span class="stat-label">Task:</span><span class="stat-val green" id="taskName">—</span>
+            <span class="stat-label">Day:</span><span class="stat-val" id="stDay">0</span>
+            <span class="stat-label">Water Used:</span><span class="stat-val" id="stWater">0 L</span>
+            <span class="stat-label">Zones:</span><span class="stat-val" id="stZones">—</span>
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sec-title">ALERT SUMMARY</div>
+        <div id="alertBadges" style="display:flex;flex-direction:column;gap:0.35rem;font-size:0.72rem;"></div>
+    </div>
+</aside>
+
+<main>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;margin-bottom:0.6rem;">
+        <div id="fullTopSpacer" style="flex:1;"></div>
+        <button id="minimalUiToggle" class="btn-outline" style="white-space:nowrap;min-width:max-content;">
+            Minimal UI
+        </button>
+    </div>
+
+    <!-- Full rich dashboard UI -->
+    <div id="fullUiRoot">
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="showTab('overview')">📊 Overview</button>
+        <button class="tab-btn" onclick="showTab('nutrition')">🌿 Nutrition</button>
+        <button class="tab-btn" onclick="showTab('crop')">🌾 Crop Health</button>
+        <button class="tab-btn" onclick="showTab('weather')">🌤 Weather</button>
+        <button class="tab-btn" onclick="showTab('logs')">📋 Logs</button>
+    </div>
+
+    <div class="tab-page active" id="tab-overview">
+        <div class="metrics-grid">
+            <div class="metric-card" style="border-left:3px solid var(--accent-blue)">
+                <label>TEMPERATURE</label>
+                <div class="metric-val" id="vTemp">--</div>
+                <div class="metric-sub" id="vTempSub">—</div>
+            </div>
+            <div class="metric-card">
+                <label>HUMIDITY</label>
+                <div class="metric-val" id="vHum">--</div>
+            </div>
+            <div class="metric-card">
+                <label>RAIN FORECAST</label>
+                <div class="metric-val green" id="vRain">--</div>
+            </div>
+            <div class="metric-card" style="border-left:3px solid var(--accent-green)">
+                <label>SUSTAINABILITY ROI</label>
+                <div class="metric-val green" id="vRoi">₹0.00</div>
+                <div class="metric-sub" id="vWaterSaved">0L Saved</div>
+            </div>
+            <div class="metric-card">
+                <label>ECO SCORE</label>
+                <div class="metric-val" id="vEco" style="color:var(--accent-yellow)">0</div>
+            </div>
+        </div>
+
+        <div class="mid-grid">
+            <div class="chart-card">
+                <div class="card-title">Irrigation Zones — Soil Moisture</div>
+                <div style="height:180px"><canvas id="zonesChart"></canvas></div>
+                <div class="zone-controls" id="zoneControls"></div>
+            </div>
+            <div class="reward-card">
+                <div class="card-title">CUMULATIVE REWARD</div>
+                <div class="reward-big" id="vReward">0.0</div>
+                <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.5rem;">Total score this episode</div>
+                <div style="margin-top:1rem;width:100%">
+                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;margin-bottom:0.25rem;">
+                        <span style="color:var(--text-secondary)">AVG MOISTURE</span>
+                        <span id="vAvgMoist" style="font-family:'JetBrains Mono',monospace;color:var(--accent-green)">--%</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;margin-bottom:0.25rem;">
+                        <span style="color:var(--text-secondary)">EVAPOTRANS.</span>
+                        <span id="vET" style="font-family:'JetBrains Mono',monospace">-- mm/day</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;">
+                        <span style="color:var(--text-secondary)">STRESS IDX</span>
+                        <span id="vStress" style="font-family:'JetBrains Mono',monospace">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+            <div class="chart-card">
+                <div class="card-title">Soil Moisture Over Time</div>
+                <div style="height:220px"><canvas id="moistureChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="card-title">Water Budget Usage</div>
+                <div style="height:220px"><canvas id="budgetChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-page" id="tab-nutrition">
+        <div class="two-col">
+            <div class="chart-card">
+                <div class="card-title">Nutrient Status by Zone</div>
+                <div style="height:220px"><canvas id="nutrientRadar"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="card-title">Nutrient Trend (Last 20 Steps)</div>
+                <div style="height:220px"><canvas id="nutrientTrend"></canvas></div>
+            </div>
+        </div>
+
+        <div class="nutrient-grid" id="nutrientCards"></div>
+
+        <div class="nutrient-rec-box">
+            <div class="rec-title">🧪 AI Nutrition Recommendations</div>
+            <div id="nutrientRecs"></div>
+        </div>
+    </div>
+
+    <div class="tab-page" id="tab-crop">
+        <div class="yield-projector">
+            <div class="card-title">YIELD PROJECTOR — CURRENT SEASON</div>
+            <div class="yield-grid">
+                <div class="yield-stat">
+                    <div class="yield-val green" id="yYield">--</div>
+                    <div class="yield-label">Est. Yield (kg/ha)</div>
+                </div>
+                <div class="yield-stat">
+                    <div class="yield-val" id="yHealth" style="color:var(--accent-yellow)">--%</div>
+                    <div class="yield-label">Crop Health Score</div>
+                </div>
+                <div class="yield-stat">
+                    <div class="yield-val" id="yDaysLeft" style="color:var(--accent-blue)">-- d</div>
+                    <div class="yield-label">Days to Harvest</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="crop-zone-grid" id="cropZoneCards"></div>
+
+        <div class="two-col">
+            <div class="chart-card">
+                <div class="card-title">Crop Growth Stage Progression</div>
+                <div style="height:200px"><canvas id="cropGrowthChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="card-title">Stress Index by Zone</div>
+                <div style="height:200px"><canvas id="stressChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-page" id="tab-weather">
+        <div class="chart-card">
+            <div class="card-title">7-Day Weather Forecast</div>
+            <div class="weather-timeline" id="weatherTimeline"></div>
+        </div>
+        <div class="two-col">
+            <div class="chart-card">
+                <div class="card-title">Temperature & Humidity Trend</div>
+                <div style="height:200px"><canvas id="weatherTrendChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="card-title">Evapotranspiration Forecast</div>
+                <div style="height:200px"><canvas id="etForecastChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-page" id="tab-logs">
+        <div class="bottom-grid">
+            <div class="logs-box" style="max-height:none">
+                <div class="logs-title">
+                    <span class="card-title">EPISODE LOG</span>
+                    <button style="background:transparent;color:var(--accent-blue);padding:0;text-transform:none;font-size:0.7rem;border-bottom:1px solid;border-radius:0" onclick="downloadCSV()">DOWNLOAD CSV</button>
+                </div>
+                <div class="logs-table-wrap" style="max-height:320px">
+                    <table id="logTable">
+                        <thead><tr><th>Step</th><th>Action</th><th>Reward</th><th>Avg Moist.</th><th>Water Used</th><th>Stress</th></tr></thead>
+                        <tbody id="logBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="card-title">Reward per Step</div>
+                <div style="height:280px"><canvas id="rewardStepChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- /fullUiRoot -->
+
+    <!-- Minimal UI view -->
+    <div id="minimalUiRoot" style="display:none;flex-direction:column;gap:0.75rem;">
+        <div class="chart-card">
+            <div class="card-title">Minimal Simulation Overview</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.4rem;" id="minScenarioSummary">
+                Configure a scenario first, then start the minimal simulation.
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:0.8rem;align-items:flex-end;">
+                <div>
+                    <label>Crop duration (days)</label>
+                    <div id="minimalDaysDisplay" style="margin-top:0.45rem;font-family:'JetBrains Mono',monospace;color:var(--text-primary);font-size:0.85rem;">—</div>
+                </div>
+                <button id="minimalStartBtn" class="btn-primary">
+                    ▶ Start Simulation
+                </button>
+                <span id="minimalThinking" class="thinking" style="display:none;">Agent is thinking…</span>
+                <div id="minimalPlantWrap" style="margin-left:auto;display:flex;align-items:flex-end;gap:0.5rem;min-width:180px;">
+                    <div style="font-size:1.2rem;" id="minimalPlantIcon">🌱</div>
+                    <div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:99px;overflow:hidden;">
+                        <div id="minimalPlantBar" style="height:100%;width:0%;background:var(--accent-green);transition:width 0.25s ease;"></div>
+                    </div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-secondary);" id="minimalPlantPct">0%</div>
+                </div>
+                <div style="font-size:0.7rem;color:var(--text-secondary);">
+                    The agent will take one decision per time‑step and we’ll describe each step in plain English.
+                </div>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="logs-box" style="max-height:none;">
+                <div class="logs-title">
+                    <span class="card-title">AGENT DECISION LOG</span>
+                </div>
+                <div id="minimalLog" style="margin-top:0.6rem;max-height:360px;overflow-y:auto;font-size:0.78rem;color:var(--text-secondary);display:flex;flex-direction:column;gap:0.35rem;"></div>
+            </div>
+            <div class="chart-card">
+                <div class="card-title">REWARD & PROFIT SUMMARY</div>
+                <div style="margin-top:0.6rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.8rem;">
+                    <div style="display:flex;justify-content:space-between;">
+                        <span>Good decisions (reward &gt; 0)</span>
+                        <span id="minRewardCount" style="font-family:'JetBrains Mono',monospace;">0</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <span>Bad decisions (reward &lt; 0)</span>
+                        <span id="minPenaltyCount" style="font-family:'JetBrains Mono',monospace;">0</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <span>Total reward score</span>
+                        <span id="minRewardTotal" style="font-family:'JetBrains Mono',monospace;color:var(--accent-green);">0.0</span>
+                    </div>
+                    <hr style="border:none;border-top:1px solid var(--border);margin:0.4rem 0;">
+                    <div style="display:flex;justify-content:space-between;">
+                        <span>Water used (for selected land)</span>
+                        <span id="minWaterUsed" style="font-family:'JetBrains Mono',monospace;">0 L</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <span>Water saved vs traditional</span>
+                        <span id="minWaterSaved" style="font-family:'JetBrains Mono',monospace;">0 L</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <span>Estimated money saved</span>
+                        <span id="minMoneySaved" style="font-family:'JetBrains Mono',monospace;">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- /minimalUiRoot -->
+</main>
+
+<script>
+const API = window.location.origin.includes('file') ? 'http://localhost:8000' : window.location.origin;
+let state = null;
+let isRunning = false;
+let activeActions = Array(8).fill(0);
+let cumulativeReward = 0;
+let stepCount = 0;
+let alerts = [];
+
+const recomEl = () => document.getElementById('recomText');
+
+let nutrientState = {};
+const NUTRIENTS = ['Nitrogen (N)', 'Phosphorus (P)', 'Potassium (K)', 'pH Level', 'Organic Matter', 'Salinity'];
+const NUTRIENT_KEYS = ['N', 'P', 'K', 'pH', 'OM', 'sal'];
+const NUTRIENT_COLORS = ['#00e5a0', '#4d9fff', '#f5c518', '#a855f7', '#ff8c42', '#ff4d6d'];
+const NUTRIENT_IDEAL = { N: [40, 80], P: [30, 70], K: [35, 75], pH: [55, 75], OM: [40, 80], sal: [20, 45] };
+
+let moistureHistory = [], waterHistory = [], rewardHistory = [];
+let weatherHistory = { temp: [], humidity: [], et: [] };
+let nutrientHistory = { N: [], P: [], K: [], pH: [], OM: [], sal: [] };
+let cropGrowthHistory = [], stressHistory = [];
+let budgetHistory = [];
+
+let chartZones, chartMoisture, chartBudget, chartNutrientRadar, chartNutrientTrend;
+let chartCropGrowth, chartStress, chartWeatherTrend, chartETForecast, chartRewardStep;
+
+const C = { green: '#00e5a0', blue: '#4d9fff', yellow: '#f5c518', orange: '#ff8c42', red: '#ff4d6d', purple: '#a855f7', grid: '#1e2d45', text: '#6b7fa3' };
+
+// Scenario configuration chosen by the user in the modal
+let scenarioConfig = {
+    crop: 'auto',
+    season: 'summer',
+    moisture: 'optimal',
+    nutrients: { a: 60, b: 50, c: 55 },
+    landHa: 5,
+};
+
+// Helper to refresh minimal UI scenario blurb from current config
+function refreshMinimalScenarioSummary() {
+    const cropKey = scenarioConfig.crop;
+    const cropName = cropKey === 'auto'
+        ? (CROP_TYPES[document.getElementById('difficulty').value] || 'Mixed')
+        : (CROP_TYPES[cropKey] || 'Mixed');
+    const seasonMap = { spring:'Spring', summer:'Summer', monsoon:'Monsoon', winter:'Winter' };
+    const moistMap = { dry:'Dry starting soil', optimal:'Optimal starting soil', wet:'Wet / waterlogged risk' };
+    const nut = scenarioConfig.nutrients || { a: 0, b: 0, c: 0 };
+    const nutText = `Nutrients ${Math.round(nut.a)}/${Math.round(nut.b)}/${Math.round(nut.c)}`;
+    const parts = [
+        `${scenarioConfig.landHa} ha`,
+        cropName,
+        seasonMap[scenarioConfig.season] || 'Season',
+        moistMap[scenarioConfig.moisture] || 'Soil',
+        nutText
+    ];
+    const el = document.getElementById('minScenarioSummary');
+    if (el) el.textContent = parts.join(' · ');
+    const d = document.getElementById('minimalDaysDisplay');
+    if (d && state && state.n_days) d.textContent = String(state.n_days);
+}
+
+// Minimal UI state
+let minimalRunning = false;
+let minimalRewardCount = 0;
+let minimalPenaltyCount = 0;
+let minimalRewardTotal = 0;
+let minimalLastInfo = null;
+
+function initCharts() {
+    const globalOpts = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 } };
+    const axisStyle = { grid: { color: C.grid }, ticks: { color: C.text }, border: { color: 'transparent' } };
+
+    chartZones = new Chart(document.getElementById('zonesChart'), {
+        type: 'bar',
+        data: { labels: ['Zone 1'], datasets: [
+            { label: 'Moisture %', data: [0], backgroundColor: C.green, borderRadius: 4 },
+            { label: 'Stress %', data: [0], backgroundColor: C.red, borderRadius: 4 }
+        ]},
+        options: { ...globalOpts, plugins: { legend: { display: true, position: 'top', labels: { color: C.text, usePointStyle: true, boxWidth: 8 } } }, scales: { y: { ...axisStyle, min: 0, max: 100 }, x: { ...axisStyle } } }
+    });
+
+    chartMoisture = new Chart(document.getElementById('moistureChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [
+            { label: 'Soil Moisture', data: [], borderColor: C.green, backgroundColor: 'rgba(0,229,160,0.07)', tension: 0.4, yAxisID: 'y', fill: true, pointRadius: 0 },
+            { label: 'Projected', data: [], borderColor: C.yellow, borderDash: [4,4], borderWidth: 2, tension: 0.4, yAxisID: 'y', fill: false, pointRadius: 0, spanGaps: true },
+            { label: 'Water Used', type: 'bar', data: [], backgroundColor: 'rgba(77,159,255,0.4)', yAxisID: 'y1' }
+        ]},
+        options: { ...globalOpts, plugins: { legend: { position: 'bottom', labels: { color: C.text, usePointStyle: true } } },
+            scales: {
+                y: { ...axisStyle, position: 'left', min: 0, max: 100, title: { display: true, text: 'Moisture %', color: C.text } },
+                y1: { ...axisStyle, position: 'right', grid: { display: false }, title: { display: true, text: 'Used (L)', color: C.text } },
+                x: { ...axisStyle }
+            }
+        }
+    });
+
+    chartBudget = new Chart(document.getElementById('budgetChart'), {
+        type: 'doughnut',
+        data: { labels: ['Used', 'Remaining'], datasets: [{ data: [0, 100], backgroundColor: [C.blue, '#1e2d45'], borderWidth: 0, hoverOffset: 4 }] },
+        options: { ...globalOpts, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: C.text } } } }
+    });
+
+    chartNutrientRadar = new Chart(document.getElementById('nutrientRadar'), {
+        type: 'radar',
+        data: { labels: ['N', 'P', 'K', 'pH', 'OM', 'Sal'], datasets: [
+            { label: 'Zone 1', data: [60,50,55,65,45,30], borderColor: C.green, backgroundColor: 'rgba(0,229,160,0.1)', pointBackgroundColor: C.green }
+        ]},
+        options: { ...globalOpts, scales: { r: { beginAtZero: true, max: 100, grid: { color: C.grid }, ticks: { color: C.text, backdropColor: 'transparent', font: { size: 9 } }, pointLabels: { color: C.text } } },
+            plugins: { legend: { position: 'bottom', labels: { color: C.text, usePointStyle: true } } } }
+    });
+
+    chartNutrientTrend = new Chart(document.getElementById('nutrientTrend'), {
+        type: 'line',
+        data: { labels: [], datasets: NUTRIENTS.map((n,i) => ({ label: n, data: [], borderColor: NUTRIENT_COLORS[i], tension: 0.4, pointRadius: 0, borderWidth: 1.5 })) },
+        options: { ...globalOpts, plugins: { legend: { position: 'bottom', labels: { color: C.text, usePointStyle: true, boxWidth: 8, font: { size: 9 } } } }, scales: { y: { ...axisStyle, min: 0, max: 100 }, x: { ...axisStyle } } }
+    });
+
+    chartCropGrowth = new Chart(document.getElementById('cropGrowthChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [
+            { label: 'Avg Growth Stage', data: [], borderColor: C.green, backgroundColor: 'rgba(0,229,160,0.05)', tension: 0.4, fill: true, pointRadius: 0 }
+        ]},
+        options: { ...globalOpts, plugins: { legend: { position: 'bottom', labels: { color: C.text, usePointStyle: true } } },
+            scales: { y: { ...axisStyle, min: 0, max: 3, ticks: { callback: v => ['Seed','Veg','Flower','Mature'][Math.round(v)] || v } }, x: { ...axisStyle } }
+        }
+    });
+
+    chartStress = new Chart(document.getElementById('stressChart'), {
+        type: 'bar',
+        data: { labels: ['Zone 1'], datasets: [{ label: 'Stress Index %', data: [0], backgroundColor: C.red, borderRadius: 4 }] },
+        options: { ...globalOpts, plugins: { legend: { display: false } }, scales: { y: { ...axisStyle, min: 0, max: 100 }, x: { ...axisStyle } } }
+    });
+
+    chartWeatherTrend = new Chart(document.getElementById('weatherTrendChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [
+            { label: 'Temp (°C)', data: [], borderColor: C.orange, tension: 0.4, yAxisID: 'y', pointRadius: 0 },
+            { label: 'Humidity %', data: [], borderColor: C.blue, tension: 0.4, yAxisID: 'y1', pointRadius: 0 }
+        ]},
+        options: { ...globalOpts, plugins: { legend: { position: 'bottom', labels: { color: C.text, usePointStyle: true } } },
+            scales: { y: { ...axisStyle }, y1: { ...axisStyle, position: 'right', grid: { display: false } }, x: { ...axisStyle } }
+        }
+    });
+
+    chartETForecast = new Chart(document.getElementById('etForecastChart'), {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'ET (mm/day)', data: [], backgroundColor: C.purple, borderRadius: 3 }] },
+        options: { ...globalOpts, plugins: { legend: { position: 'bottom', labels: { color: C.text, usePointStyle: true } } }, scales: { y: { ...axisStyle }, x: { ...axisStyle } } }
+    });
+
+    chartRewardStep = new Chart(document.getElementById('rewardStepChart'), {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Step Reward', data: [], backgroundColor: d => d.raw >= 0 ? 'rgba(0,229,160,0.5)' : 'rgba(255,77,109,0.5)', borderRadius: 3 }] },
+        options: { ...globalOpts, plugins: { legend: { display: false } }, scales: { y: { ...axisStyle }, x: { ...axisStyle } } }
+    });
+}
+
+function showTab(id) {
+    document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    event.target.classList.add('active');
+}
+
+async function apiCall(path, method = 'GET', body = null) {
+    try {
+        const res = await fetch(`${API}${path}`, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : null });
+        return await res.json();
+    } catch (e) { return null; }
+}
+
+function simulateNutrients(s) {
+    if (!s) return;
+    const n = s.n_zones;
+    if (!nutrientState.initialized || stepCount % 1 === 0) {
+        for (let i = 0; i < n; i++) {
+            if (!nutrientState[i]) {
+                const sel = scenarioConfig.nutrients || { a: 60, b: 50, c: 55 };
+                nutrientState[i] = {
+                    N: Math.max(5, Math.min(95, 40 + sel.a * 0.6 + Math.random()*10)),
+                    P: Math.max(5, Math.min(95, 30 + sel.b * 0.6 + Math.random()*10)),
+                    K: Math.max(5, Math.min(95, 30 + sel.c * 0.6 + Math.random()*10)),
+                    pH: 58 + Math.random()*15,
+                    OM: Math.max(10, Math.min(90, 25 + (sel.b + sel.c) * 0.25 + Math.random()*15)),
+                    sal: 15 + Math.random()*20,
+                };
+            } else {
+                const moist = s.soil_moisture[i];
+                const stress = s.stress_index[i];
+                nutrientState[i].N = Math.max(5, nutrientState[i].N - (moist * 0.3 + stress * 0.2 + Math.random() * 0.5));
+                nutrientState[i].P = Math.max(5, nutrientState[i].P - (0.15 + Math.random() * 0.3));
+                nutrientState[i].K = Math.max(5, nutrientState[i].K - (0.12 + stress * 0.15 + Math.random() * 0.25));
+                nutrientState[i].pH = Math.max(20, Math.min(90, nutrientState[i].pH + (Math.random() - 0.48) * 0.8));
+                nutrientState[i].OM = Math.max(10, nutrientState[i].OM - 0.05 + Math.random() * 0.1);
+                nutrientState[i].sal = Math.max(0, Math.min(80, nutrientState[i].sal + (moist > 0.5 ? -0.2 : 0.3) + (Math.random()-0.5)*0.5));
+            }
+        }
+        nutrientState.initialized = true;
+    }
+}
+
+function updateNutritionPanel(s) {
+    if (!s) return;
+    const n = s.n_zones;
+    simulateNutrients(s);
+
+    const z0 = nutrientState[0] || {};
+    const radarData = [z0.N||50, z0.P||50, z0.K||50, z0.pH||60, z0.OM||45, z0.sal||25];
+    chartNutrientRadar.data.datasets[0].data = radarData;
+    if (n > 1) {
+        if (chartNutrientRadar.data.datasets.length < 2) {
+            chartNutrientRadar.data.datasets.push({ label: 'Zone 2', data: [], borderColor: C.blue, backgroundColor: 'rgba(77,159,255,0.1)', pointBackgroundColor: C.blue });
+        }
+        const z1 = nutrientState[1] || {};
+        chartNutrientRadar.data.datasets[1].data = [z1.N||50, z1.P||50, z1.K||50, z1.pH||60, z1.OM||45, z1.sal||25];
+    }
+    chartNutrientRadar.update();
+
+    const avgNutrients = {};
+    NUTRIENT_KEYS.forEach(k => {
+        let sum = 0;
+        for (let i = 0; i < n; i++) sum += (nutrientState[i]?.[k] || 50);
+        avgNutrients[k] = sum / n;
+    });
+    const maxHistory = 20;
+    NUTRIENT_KEYS.forEach((k, ki) => {
+        nutrientHistory[k].push(avgNutrients[k]);
+        if (nutrientHistory[k].length > maxHistory) nutrientHistory[k].shift();
+        chartNutrientTrend.data.datasets[ki].data = [...nutrientHistory[k]];
+    });
+    chartNutrientTrend.data.labels = Array.from({length: nutrientHistory.N.length}, (_, i) => i + 1);
+    chartNutrientTrend.update();
+
+    const container = document.getElementById('nutrientCards');
+    container.innerHTML = '';
+    NUTRIENT_KEYS.forEach((k, ki) => {
+        const val = avgNutrients[k];
+        const [lo, hi] = NUTRIENT_IDEAL[k];
+        const isGood = val >= lo && val <= hi;
+        const isLow = val < lo;
+        const statusClass = isGood ? 'status-good' : isLow ? 'status-low' : 'status-deficient';
+        const statusText = isGood ? '✓ Optimal' : isLow ? '⚠ Low' : '✗ Excess';
+        const display = k === 'pH' ? (4 + val/100*6).toFixed(1) : Math.round(val) + (k === 'sal' ? ' dS/m' : ' mg/kg');
+        container.innerHTML += `
+            <div class="nutrient-card">
+                <div class="nutrient-name">${NUTRIENTS[ki]}</div>
+                <div class="nutrient-val" style="color:${NUTRIENT_COLORS[ki]}">${display}</div>
+                <div class="nutrient-bar-wrap"><div class="nutrient-bar" style="width:${Math.min(100,val)}%;background:${NUTRIENT_COLORS[ki]}"></div></div>
+                <div class="nutrient-status ${statusClass}">${statusText}</div>
+            </div>`;
+    });
+
+    const recs = [];
+    if (avgNutrients.N < NUTRIENT_IDEAL.N[0]) recs.push(`<div class="rec-item">🌿 <strong>Low Nitrogen:</strong> Apply urea or ammonium nitrate — ~${Math.round((NUTRIENT_IDEAL.N[0]-avgNutrients.N)*0.5)} kg/ha recommended</div>`);
+    if (avgNutrients.P < NUTRIENT_IDEAL.P[0]) recs.push(`<div class="rec-item">🌱 <strong>Low Phosphorus:</strong> Apply DAP (di-ammonium phosphate) to improve root development</div>`);
+    if (avgNutrients.K < NUTRIENT_IDEAL.K[0]) recs.push(`<div class="rec-item">💪 <strong>Low Potassium:</strong> Potassium chloride application improves drought tolerance</div>`);
+    if (avgNutrients.pH < NUTRIENT_IDEAL.pH[0]) recs.push(`<div class="rec-item">🧪 <strong>Acidic Soil:</strong> Apply agricultural lime to raise pH to 6.0–7.0 range</div>`);
+    if (avgNutrients.pH > NUTRIENT_IDEAL.pH[1]) recs.push(`<div class="rec-item">⚗️ <strong>Alkaline Soil:</strong> Apply elemental sulfur to lower pH. Reduce irrigation frequency.</div>`);
+    if (avgNutrients.sal > NUTRIENT_IDEAL.sal[1]) recs.push(`<div class="rec-item">🧂 <strong>High Salinity:</strong> Flush soil with low-salinity water. Consider leaching fraction.</div>`);
+    if (recs.length === 0) recs.push(`<div class="rec-item">✅ <strong>All nutrients optimal.</strong> Continue current management. Monitor weekly.</div>`);
+    document.getElementById('nutrientRecs').innerHTML = recs.join('');
+}
+
+const CROP_TYPES = {
+    easy: 'Wheat', medium: 'Mixed', hard: 'Mixed',
+    wheat: 'Wheat', corn: 'Corn', rice: 'Rice', tomato: 'Tomato', soybean: 'Soybean'
+};
+
+const CROP_NUTRIENT_PROFILES = {
+    wheat: [
+        { key: 'a', label: 'Nitrogen (N)', min: 0, max: 100, value: 70 },
+        { key: 'b', label: 'Phosphorus (P)', min: 0, max: 100, value: 55 },
+        { key: 'c', label: 'Potassium (K)', min: 0, max: 100, value: 60 },
+    ],
+    corn: [
+        { key: 'a', label: 'Nitrogen (N)', min: 0, max: 100, value: 80 },
+        { key: 'b', label: 'Phosphorus (P)', min: 0, max: 100, value: 60 },
+        { key: 'c', label: 'Potassium (K)', min: 0, max: 100, value: 70 },
+    ],
+    rice: [
+        { key: 'a', label: 'Nitrogen (N)', min: 0, max: 100, value: 75 },
+        { key: 'b', label: 'Phosphorus (P)', min: 0, max: 100, value: 50 },
+        { key: 'c', label: 'Potassium (K)', min: 0, max: 100, value: 55 },
+    ],
+    tomato: [
+        { key: 'a', label: 'Nitrogen (N)', min: 0, max: 100, value: 65 },
+        { key: 'b', label: 'Potassium (K)', min: 0, max: 100, value: 80 },
+        { key: 'c', label: 'Calcium (Ca)', min: 0, max: 100, value: 70 },
+    ],
+    soybean: [
+        { key: 'a', label: 'Nitrogen (N)', min: 0, max: 100, value: 50 },
+        { key: 'b', label: 'Phosphorus (P)', min: 0, max: 100, value: 65 },
+        { key: 'c', label: 'Potassium (K)', min: 0, max: 100, value: 65 },
+    ],
+    auto: [
+        { key: 'a', label: 'Nitrogen (N)', min: 0, max: 100, value: 60 },
+        { key: 'b', label: 'Phosphorus (P)', min: 0, max: 100, value: 50 },
+        { key: 'c', label: 'Potassium (K)', min: 0, max: 100, value: 55 },
+    ],
+};
+
+// Crop-season compatibility (simple agronomy constraints)
+const CROP_SEASON_COMPAT = {
+    wheat: ['spring', 'winter'],
+    corn: ['spring', 'summer'],
+    rice: ['summer', 'monsoon'],
+    tomato: ['spring', 'summer'],
+    soybean: ['summer', 'monsoon'],
+    auto: ['spring', 'summer', 'monsoon', 'winter'],
+};
+
+function syncCropSeasonLocks(changed) {
+    const cropSel = document.getElementById('scenarioCrop');
+    const seasonSel = document.getElementById('scenarioSeason');
+    if (!cropSel || !seasonSel) return;
+
+    const currentCrop = cropSel.value || 'auto';
+    const currentSeason = seasonSel.value || 'summer';
+
+    // If crop changed, lock seasons
+    if (changed === 'crop') {
+        const allowedSeasons = new Set(CROP_SEASON_COMPAT[currentCrop] || CROP_SEASON_COMPAT.auto);
+        Array.from(seasonSel.options).forEach(opt => {
+            const ok = allowedSeasons.has(opt.value);
+            opt.disabled = !ok;
+        });
+        if (seasonSel.selectedOptions[0]?.disabled) {
+            const firstOk = Array.from(seasonSel.options).find(o => !o.disabled);
+            if (firstOk) seasonSel.value = firstOk.value;
+        }
+    }
+
+    // If season changed, lock crops
+    if (changed === 'season') {
+        Array.from(cropSel.options).forEach(opt => {
+            const crop = opt.value;
+            const ok = (CROP_SEASON_COMPAT[crop] || CROP_SEASON_COMPAT.auto).includes(currentSeason);
+            opt.disabled = !ok;
+        });
+        if (cropSel.selectedOptions[0]?.disabled) {
+            const firstOk = Array.from(cropSel.options).find(o => !o.disabled);
+            if (firstOk) cropSel.value = firstOk.value;
+        }
+        // After adjusting crop, lock seasons accordingly too
+        syncCropSeasonLocks('crop');
+    }
+}
+const STAGE_LABELS = ['Germination', 'Vegetative', 'Flowering', 'Maturity'];
+const STAGE_CLASSES = ['stage-germination', 'stage-vegetative', 'stage-flowering', 'stage-mature'];
+const CROP_YIELD_BASE = { Wheat: 4500, Corn: 9000, Rice: 5500, Tomato: 60000, Soybean: 3000, Mixed: 6000 };
+
+function updateCropPanel(s) {
+    if (!s) return;
+    const n = s.n_zones;
+    const difficulty = document.getElementById('difficulty').value;
+    const cropOverride = document.getElementById('cropOverride').value;
+    const cropKey = (scenarioConfig.crop !== 'auto' ? scenarioConfig.crop : cropOverride);
+    const cropName = cropKey === 'auto'
+        ? (CROP_TYPES[difficulty] || 'Mixed')
+        : (CROP_TYPES[cropKey] || 'Mixed');
+
+    const avgStress = s.stress_index.reduce((a,b)=>a+b,0)/n;
+    const avgStage = s.crop_growth_stage.reduce((a,b)=>a+b,0)/n;
+    const healthScore = Math.max(0, 100 * (1 - avgStress));
+    const seasonProgress = s.day_of_season / s.n_days;
+    const baseYield = CROP_YIELD_BASE[cropName] || 5000;
+    const estYield = Math.round(baseYield * (seasonProgress * 0.8 + 0.2) * (healthScore/100) * ((avgStage/3)*0.7+0.3));
+    const daysLeft = Math.max(0, s.n_days - s.day_of_season);
+
+    document.getElementById('yYield').textContent = estYield.toLocaleString();
+    document.getElementById('yHealth').textContent = Math.round(healthScore) + '%';
+    document.getElementById('yDaysLeft').textContent = daysLeft + ' d';
+
+    const container = document.getElementById('cropZoneCards');
+    container.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+        const moist = Math.round(s.soil_moisture[i] * 100);
+        const stress = Math.round(s.stress_index[i] * 100);
+        const stage = Math.min(3, Math.floor(s.crop_growth_stage[i]));
+        const daysSince = Math.round(s.days_since_irrigation[i]);
+        container.innerHTML += `
+            <div class="crop-zone-card">
+                <div class="crop-zone-header">
+                    <div class="crop-zone-name">Zone ${i+1} — ${cropName}</div>
+                    <span class="crop-badge ${STAGE_CLASSES[stage]}">${STAGE_LABELS[stage]}</span>
+                </div>
+                <div class="crop-stat"><span class="crop-stat-label">Soil Moisture</span><span class="crop-stat-val" style="color:var(--accent-green)">${moist}%</span></div>
+                <div class="progress-wrap"><div class="progress-bar" style="width:${moist}%;background:var(--accent-green)"></div></div>
+                <div class="crop-stat" style="margin-top:0.4rem"><span class="crop-stat-label">Stress Index</span><span class="crop-stat-val" style="color:${stress>50?'var(--accent-red)':stress>25?'var(--accent-yellow)':'var(--accent-green)'}">${stress}%</span></div>
+                <div class="progress-wrap"><div class="progress-bar" style="width:${stress}%;background:${stress>50?'var(--accent-red)':stress>25?'var(--accent-yellow)':'var(--accent-green)'}"></div></div>
+                <div class="crop-stat" style="margin-top:0.4rem"><span class="crop-stat-label">Days since irrigated</span><span class="crop-stat-val">${daysSince}d</span></div>
+                <div class="crop-stat"><span class="crop-stat-label">Growth Stage</span><span class="crop-stat-val">${s.crop_growth_stage[i].toFixed(1)} / 3</span></div>
+            </div>`;
+    }
+
+    const avgStageVal = s.crop_growth_stage.reduce((a,b)=>a+b,0)/n;
+    cropGrowthHistory.push(avgStageVal);
+    if (cropGrowthHistory.length > 30) cropGrowthHistory.shift();
+    chartCropGrowth.data.labels = Array.from({length: cropGrowthHistory.length}, (_,i) => i+1);
+    chartCropGrowth.data.datasets[0].data = [...cropGrowthHistory];
+    chartCropGrowth.update();
+
+    chartStress.data.labels = Array.from({length:n}, (_,i) => `Zone ${i+1}`);
+    chartStress.data.datasets[0].data = s.stress_index.map(v => Math.round(v*100));
+    chartStress.data.datasets[0].backgroundColor = s.stress_index.map(v => v > 0.5 ? C.red : v > 0.25 ? C.yellow : C.green);
+    chartStress.update();
+}
+
+const WEATHER_ICONS = ['☀️','⛅','🌥','🌦','🌧','⛈'];
+function updateWeatherPanel(s) {
+    if (!s) return;
+    const timeline = document.getElementById('weatherTimeline');
+    const days = ['Today', 'Tmr', '+2d', '+3d', '+4d', '+5d', '+6d'];
+    const baseTemp = s.temp_c;
+    const baseRain = s.rain_forecast_mm;
+    timeline.innerHTML = days.map((d,i) => {
+        const t = (baseTemp + (Math.random()-0.5)*8 * (i*0.3+1)).toFixed(1);
+        const r = Math.max(0, baseRain + (Math.random()-0.5)*10 * i).toFixed(1);
+        const icon = WEATHER_ICONS[Math.min(5, Math.floor(r/3))];
+        const todayClass = i===0 ? 'today' : '';
+        return `<div class="weather-day ${todayClass}">
+            <div class="w-day-label">${d}</div>
+            <div class="w-icon">${icon}</div>
+            <div class="w-temp">${t}°</div>
+            <div class="w-rain">${r}mm</div>
+        </div>`;
+    }).join('');
+
+    weatherHistory.temp.push(s.temp_c);
+    weatherHistory.humidity.push(Math.round(s.humidity*100));
+    weatherHistory.et.push(s.evapotranspiration.toFixed(2));
+    const maxH = 20;
+    ['temp','humidity','et'].forEach(k => { if (weatherHistory[k].length > maxH) weatherHistory[k].shift(); });
+    const labels = Array.from({length: weatherHistory.temp.length}, (_,i) => i+1);
+    chartWeatherTrend.data.labels = labels;
+    chartWeatherTrend.data.datasets[0].data = [...weatherHistory.temp];
+    chartWeatherTrend.data.datasets[1].data = [...weatherHistory.humidity];
+    chartWeatherTrend.update();
+    chartETForecast.data.labels = labels;
+    chartETForecast.data.datasets[0].data = [...weatherHistory.et];
+    chartETForecast.update();
+}
+
+function updateAlerts(s) {
+    if (!s) return;
+    const now = new Date().toLocaleTimeString();
+    alerts = [];
+    const avgStress = s.stress_index.reduce((a,b)=>a+b,0)/s.n_zones;
+    const avgMoist = s.soil_moisture.reduce((a,b)=>a+b,0)/s.n_zones;
+    if (avgStress > 0.5) alerts.push({ type:'critical', icon:'🚨', title:'Critical Plant Stress', desc:`Avg stress index ${(avgStress*100).toFixed(0)}%. Immediate irrigation required.`, time: now });
+    if (avgMoist < 0.3) alerts.push({ type:'warning', icon:'⚠️', title:'Low Soil Moisture', desc:`Avg moisture at ${(avgMoist*100).toFixed(0)}%. Below safe threshold of 30%.`, time: now });
+    if (s.rain_forecast_mm > 10) alerts.push({ type:'info', icon:'🌧', title:'Rain Forecast', desc:`${s.rain_forecast_mm.toFixed(1)}mm rain expected. Consider delaying irrigation.`, time: now });
+    if (s.evapotranspiration > 7) alerts.push({ type:'warning', icon:'☀️', title:'High Evapotranspiration', desc:`ET at ${s.evapotranspiration.toFixed(1)} mm/day. Increased water loss expected.`, time: now });
+
+    const badges = document.getElementById('alertBadges');
+    if (alerts.length === 0) {
+        badges.innerHTML = '<span style="color:var(--accent-green);font-size:0.72rem;">✓ No active alerts</span>';
+    } else {
+        badges.innerHTML = alerts.slice(0,3).map(a => `<div style="display:flex;gap:0.4rem;align-items:center"><span>${a.icon}</span><span style="font-size:0.68rem;color:${a.type==='critical'?'var(--accent-red)':a.type==='warning'?'var(--accent-yellow)':'var(--accent-blue)'}">${a.title}</span></div>`).join('');
+    }
+}
+
+async function updateState() {
+    const s = await apiCall('/state');
+    if (!s) return;
+    state = s;
+    const n = s.n_zones;
+
+    document.getElementById('vTemp').innerText = `${s.temp_c.toFixed(1)}°C`;
+    document.getElementById('vTemp').style.color = 'white';
+    document.getElementById('vTempSub').innerText = `Feels like ${(s.temp_c-s.humidity*3).toFixed(0)}°C`;
+    document.getElementById('vHum').innerText = `${(s.humidity*100).toFixed(0)}%`;
+    document.getElementById('vRain').innerText = `${s.rain_forecast_mm.toFixed(1)}mm`;
+    if (s.roi) {
+        document.getElementById('vRoi').innerText = `₹${Math.round(s.roi.money_saved)}`;
+        document.getElementById('vWaterSaved').innerText = `${s.roi.water_saved.toFixed(0)}L Saved`;
+        document.getElementById('vEco').innerText = Math.round(s.roi.eco_score);
+    }
+    document.getElementById('stWater').innerText = `${(s.water_used_liters||0).toFixed(0)} L`;
+    document.getElementById('stDay').innerText = `${s.day_of_season}/${s.n_days}`;
+    document.getElementById('stZones').innerText = n;
+    document.getElementById('taskName').innerText = s.n_zones === 1 ? 'Easy' : s.n_zones === 4 ? 'Medium' : 'Hard';
+
+    const avgMoist = s.soil_moisture.reduce((a,b)=>a+b,0)/n;
+    const avgStress = s.stress_index.reduce((a,b)=>a+b,0)/n;
+    document.getElementById('vAvgMoist').innerText = `${(avgMoist*100).toFixed(0)}%`;
+    document.getElementById('vET').innerText = `${s.evapotranspiration.toFixed(2)} mm/d`;
+    document.getElementById('vStress').innerText = `${(avgStress*100).toFixed(0)}%`;
+
+    chartZones.data.labels = Array.from({length:n}, (_,i) => `Zone ${i+1}`);
+    chartZones.data.datasets[0].data = s.soil_moisture.map(m => Math.round(m*100));
+    chartZones.data.datasets[1].data = s.stress_index.map(v => Math.round(v*100));
+    chartZones.update();
+
+    const usedPct = 100 - Math.round(s.water_budget_remaining*100);
+    chartBudget.data.datasets[0].data = [usedPct, 100-usedPct];
+    chartBudget.data.datasets[0].backgroundColor = [usedPct > 80 ? C.red : usedPct > 60 ? C.yellow : C.blue, '#1e2d45'];
+    chartBudget.update();
+
+    renderToggles(n);
+    updateAlerts(s);
+    updateNutritionPanel(s);
+    updateCropPanel(s);
+    updateWeatherPanel(s);
+
+    if (s.projections && s.projections.length) {
+        stripMoistureChartProjectionTail();
+        const n = chartMoisture.data.datasets[0].data.length;
+        const steps = s.projections.length;
+        if (n === 0) {
+            const vals = s.projections.map(p => Math.round(p * 100));
+            chartMoisture.data.labels = Array.from({ length: steps }, (_, i) => '+' + (i + 1));
+            chartMoisture.data.datasets[0].data = Array(steps).fill(null);
+            chartMoisture.data.datasets[2].data = Array(steps).fill(null);
+            chartMoisture.data.datasets[1].data = vals;
+        } else {
+            const proj = Array(n).fill(null);
+            proj[n - 1] = chartMoisture.data.datasets[0].data[n - 1];
+            s.projections.forEach(p => proj.push(Math.round(p * 100)));
+            const labels = chartMoisture.data.labels.slice();
+            for (let i = 1; i <= steps; i++) labels.push('+' + i);
+            chartMoisture.data.labels = labels;
+            chartMoisture.data.datasets[0].data = chartMoisture.data.datasets[0].data.concat(Array(steps).fill(null));
+            chartMoisture.data.datasets[2].data = chartMoisture.data.datasets[2].data.concat(Array(steps).fill(null));
+            chartMoisture.data.datasets[1].data = proj;
+        }
+        chartMoisture.update();
+    }
+
+}
+
+function renderToggles(n) {
+    const container = document.getElementById('zoneControls');
+    container.innerHTML = '';
+    for (let i=0;i<n;i++) {
+        const box = document.createElement('div');
+        box.className = 'zone-ctrl-box';
+        box.innerHTML = `<label>Zone ${i+1}</label>
+            <div class="toggle-group">
+                <div class="toggle-btn ${activeActions[i]==0?'active':''}" onclick="setToggle(${i},0)">OFF</div>
+                <div class="toggle-btn ${activeActions[i]==1?'active green':''}" onclick="setToggle(${i},1)">LOW</div>
+                <div class="toggle-btn ${activeActions[i]==2?'active green':''}" onclick="setToggle(${i},2)">MED</div>
+                <div class="toggle-btn ${activeActions[i]==3?'active green':''}" onclick="setToggle(${i},3)">HIGH</div>
+            </div>`;
+        container.appendChild(box);
+    }
+}
+function setToggle(z,v) { activeActions[z]=v; renderToggles(state.n_zones); }
+
+async function reset() {
+    const task = document.getElementById('difficulty').value;
+    const data = await apiCall('/reset','POST',{
+        task,
+        crop: scenarioConfig.crop,
+        season: scenarioConfig.season,
+        land_ha: scenarioConfig.landHa,
+        nutrients: scenarioConfig.nutrients
+    });
+    if (data) {
+        cumulativeReward = 0; stepCount = 0;
+        document.getElementById('logBody').innerHTML = '';
+        document.getElementById('vReward').innerText = '0.0';
+        chartMoisture.data.labels = [];
+        chartMoisture.data.datasets.forEach(d => d.data = []);
+        chartMoisture.update();
+        activeActions = Array(8).fill(0);
+        moistureHistory = []; waterHistory = []; rewardHistory = [];
+        weatherHistory = {temp:[],humidity:[],et:[]};
+        nutrientHistory = {N:[],P:[],K:[],pH:[],OM:[],sal:[]};
+        cropGrowthHistory = []; stressHistory = []; budgetHistory = [];
+        nutrientState = {};
+        chartRewardStep.data.labels = []; chartRewardStep.data.datasets[0].data = []; chartRewardStep.update();
+        await updateState();
+        const adviceBase = { easy:'Plenty of water. Maintain 40–60% moisture.', medium:'Watch budget closely. Step carefully.', hard:'Extreme conditions. RL Agent recommended.' };
+        const seasonLabel = { spring:'Spring', summer:'Summer', monsoon:'Monsoon', winter:'Winter' }[scenarioConfig.season] || 'Season';
+        const moistLabel = scenarioConfig.moisture === 'dry'
+            ? 'Fields start dry — expect higher stress until irrigated.'
+            : scenarioConfig.moisture === 'wet'
+                ? 'Fields start wet — avoid over‑watering and waterlogging.'
+                : 'Fields start near the target moisture band.';
+        if (recomEl()) {
+            recomEl().innerText = `${adviceBase[task] || 'Monitoring…'} (${seasonLabel} · ${moistLabel})`;
+        }
+    }
+}
+
+async function runAutoStep() {
+    const res = await apiCall('/auto-step','POST');
+    if (res) { processStep(res, 'Rule Agent'); return res.terminated||res.truncated; }
+    return true;
+}
+async function runManualStep() {
+    if (!state) return;
+    const action = activeActions.slice(0, state.n_zones).concat(0);
+    const res = await apiCall('/step','POST',{action});
+    if (res) processStep(res,'Manual');
+}
+
+function processStep(res, mode) {
+    const actionLabels = {0:'OFF',1:'LOW',2:'MED',3:'HIGH'};
+    const za = res.info?.last_action?.zone_actions || [];
+    const actLabel = za.length>0 ? za.map(a=>actionLabels[a]||'OFF').join(',') : mode;
+    stepCount++;
+
+    if (res.reasoning) {
+        if (recomEl()) recomEl().innerText = res.reasoning;
+    } else if (res.info?.reward_components) {
+        const rc = res.info.reward_components;
+        if (rc.stress_penalty<0) { if (recomEl()) recomEl().innerText = '🚨 CRITICAL: Plant stress detected! Increase irrigation.'; }
+        else if (rc.waterlog_penalty<0) { if (recomEl()) recomEl().innerText = '⚠ CAUTION: Waterlogging detected! Reduce irrigation.'; }
+        else { if (recomEl()) recomEl().innerText = `✓ System stable. Water: ${res.info.water_used_step?.toFixed(1)}L. Mode: ${mode}.`; }
+    }
+    addLogRow(res, actLabel);
+    updateState();
+}
+
+function stripMoistureChartProjectionTail() {
+    const lbl = chartMoisture.data.labels;
+    let n = 0;
+    for (let i = 0; i < lbl.length; i++) {
+        if (String(lbl[i]).startsWith('+')) break;
+        n++;
+    }
+    chartMoisture.data.labels = lbl.slice(0, n);
+    chartMoisture.data.datasets[0].data = chartMoisture.data.datasets[0].data.slice(0, n);
+    chartMoisture.data.datasets[1].data = chartMoisture.data.datasets[1].data.slice(0, n);
+    chartMoisture.data.datasets[2].data = chartMoisture.data.datasets[2].data.slice(0, n);
+}
+
+function addLogRow(res, act) {
+    stripMoistureChartProjectionTail();
+    const body = document.getElementById('logBody');
+    const row = body.insertRow(0);
+    const r = res.reward.toFixed(2);
+    const n = state.n_zones;
+    const moistSlice = res.observation.slice(0,n);
+    const avgM = Math.round(moistSlice.reduce((a,b)=>a+b,0)/n*100);
+    const wUse = res.info?.water_used_step||0;
+    const stressSlice = res.observation.slice(n*2, n*3);
+    const avgS = stressSlice.length > 0 ? Math.round(stressSlice.reduce((a,b)=>a+b,0)/stressSlice.length*100) : '--';
+    row.innerHTML = `<td>${body.rows.length}</td><td>${act}</td><td class="${r>=0?'pos':'neg'}">${r>=0?'+':''}${r}</td><td>${avgM}%</td><td>${wUse.toFixed(1)}L</td><td>${avgS}%</td>`;
+
+    cumulativeReward += res.reward;
+    document.getElementById('vReward').innerText = cumulativeReward.toFixed(1);
+    document.getElementById('vReward').style.color = cumulativeReward >= 0 ? C.green : C.red;
+
+    chartMoisture.data.labels.push(stepCount);
+    chartMoisture.data.datasets[0].data.push(avgM);
+    chartMoisture.data.datasets[2].data.push(wUse);
+    chartMoisture.update();
+
+    chartRewardStep.data.labels.push(stepCount);
+    chartRewardStep.data.datasets[0].data.push(res.reward);
+    chartRewardStep.data.datasets[0].backgroundColor = chartRewardStep.data.datasets[0].data.map(v => v>=0 ? 'rgba(0,229,160,0.5)' : 'rgba(255,77,109,0.5)');
+    if (chartRewardStep.data.labels.length > 30) {
+        chartRewardStep.data.labels.shift();
+        chartRewardStep.data.datasets[0].data.shift();
+        chartRewardStep.data.datasets[0].backgroundColor.shift();
+    }
+    chartRewardStep.update();
+}
+
+function downloadCSV() {
+    const rows = document.querySelectorAll('#logBody tr');
+    let csv = 'Step,Action,Reward,AvgMoisture,WaterUsed,Stress\n';
+    rows.forEach(r => { csv += Array.from(r.cells).map(c=>c.innerText).join(',') + '\n'; });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv],{type:'text/csv'})), download: 'irrigation_report.csv' });
+    a.click();
+}
+
+// Scenario modal helpers
+function updateScenarioSummary() {
+    const cropSel = document.getElementById('scenarioCrop').value;
+    const seasonSel = document.getElementById('scenarioSeason').value;
+    const moistSel = document.getElementById('scenarioMoisture').value;
+    const landSel = document.getElementById('scenarioLand').value;
+
+    const cropLabel = cropSel === 'auto' ? 'Auto crop' : CROP_TYPES[cropSel] || 'Custom crop';
+    const seasonMap = { spring:'Spring', summer:'Summer', monsoon:'Monsoon', winter:'Winter' };
+    const moistMap = { dry:'Dry', optimal:'Optimal moisture', wet:'Wet' };
+    const nut = readScenarioNutrientsFromSliders();
+    const nutText = nut ? `Nutrients ${nut.a}/${nut.b}/${nut.c}` : 'Nutrients';
+
+    document.getElementById('scenarioSummary').innerText =
+        `${cropLabel} · ${seasonMap[seasonSel] || 'Season'} · ${moistMap[moistSel]} · ${nutText} · ${landSel} ha`;
+}
+
+function openScenarioModal() {
+    const bd = document.getElementById('scenarioBackdrop');
+    bd.classList.add('show');
+    renderScenarioNutrientSliders();
+    syncCropSeasonLocks('crop');
+    updateScenarioSummary();
+}
+
+function closeScenarioModal() {
+    document.getElementById('scenarioBackdrop').classList.remove('show');
+}
+
+function getScenarioCropKey() {
+    const cropSel = document.getElementById('scenarioCrop')?.value || 'auto';
+    return cropSel in CROP_NUTRIENT_PROFILES ? cropSel : 'auto';
+}
+
+function readScenarioNutrientsFromSliders() {
+    const wrap = document.getElementById('scenarioNutrientSliders');
+    if (!wrap) return null;
+    const a = wrap.querySelector('input[data-key="a"]');
+    const b = wrap.querySelector('input[data-key="b"]');
+    const c = wrap.querySelector('input[data-key="c"]');
+    if (!a || !b || !c) return null;
+    return { a: Number(a.value), b: Number(b.value), c: Number(c.value) };
+}
+
+function renderScenarioNutrientSliders() {
+    const wrap = document.getElementById('scenarioNutrientSliders');
+    if (!wrap) return;
+    const cropKey = getScenarioCropKey();
+    const profile = CROP_NUTRIENT_PROFILES[cropKey] || CROP_NUTRIENT_PROFILES.auto;
+
+    // Use existing config values if present, otherwise defaults from profile
+    const existing = scenarioConfig?.nutrients || {};
+    wrap.innerHTML = profile.map(p => {
+        const val = typeof existing[p.key] === 'number' ? existing[p.key] : p.value;
+        return `
+            <div class="range-wrap">
+                <div class="range-row">
+                    <span>${p.label}</span>
+                    <span id="nut-${p.key}-val">${val}</span>
+                </div>
+                <input type="range" min="${p.min}" max="${p.max}" value="${val}" data-key="${p.key}" />
+            </div>
+        `;
+    }).join('');
+
+    wrap.querySelectorAll('input[type="range"]').forEach(inp => {
+        inp.addEventListener('input', () => {
+            const key = inp.getAttribute('data-key');
+            const valEl = document.getElementById(`nut-${key}-val`);
+            if (valEl) valEl.textContent = inp.value;
+            updateScenarioSummary();
+        });
+    });
+    updateScenarioSummary();
+}
+
+function resetScenarioDefaults() {
+    document.getElementById('scenarioCrop').value = 'auto';
+    document.getElementById('scenarioSeason').value = 'summer';
+    document.getElementById('scenarioMoisture').value = 'optimal';
+    document.getElementById('scenarioLand').value = '5';
+    renderScenarioNutrientSliders();
+    updateScenarioSummary();
+}
+
+async function applyScenarioAndStart() {
+    scenarioConfig = {
+        crop: document.getElementById('scenarioCrop').value,
+        season: document.getElementById('scenarioSeason').value,
+        moisture: document.getElementById('scenarioMoisture').value,
+        nutrients: readScenarioNutrientsFromSliders() || scenarioConfig.nutrients,
+        landHa: Number(document.getElementById('scenarioLand').value || '5'),
+    };
+
+    // Reflect crop choice into sidebar override for clarity
+    const cropOverride = document.getElementById('cropOverride');
+    cropOverride.value = scenarioConfig.crop;
+
+    closeScenarioModal();
+    refreshMinimalScenarioSummary();
+    await reset();
+    showAutoRunNudge();
+}
+
+function appendMinimalLogLine(text) {
+    const box = document.getElementById('minimalLog');
+    if (!box) return;
+    const line = document.createElement('div');
+    line.textContent = text;
+    box.prepend(line);
+}
+
+function showAutoRunNudge() {
+    const toast = document.getElementById('autoRunNudge');
+    const loopBtn = document.getElementById('loopBtn');
+    if (!toast || !loopBtn) return;
+
+    toast.style.display = 'block';
+    loopBtn.classList.add('pulse-outline');
+    setTimeout(() => loopBtn.classList.remove('pulse-outline'), 3800);
+
+    const dismiss = () => { toast.style.display = 'none'; };
+    const dismissBtn = document.getElementById('nudgeDismissBtn');
+    const goBtn = document.getElementById('nudgeGoLoopBtn');
+    if (dismissBtn) dismissBtn.onclick = dismiss;
+    if (goBtn) goBtn.onclick = () => { dismiss(); loopBtn.click(); };
+
+    setTimeout(() => {
+        if (toast.style.display === 'block') toast.style.display = 'none';
+    }, 9000);
+}
+
+async function runMinimalSimulation() {
+    if (minimalRunning) return;
+    minimalRunning = true;
+    minimalRewardCount = 0;
+    minimalPenaltyCount = 0;
+    minimalRewardTotal = 0;
+    minimalLastInfo = null;
+
+    document.getElementById('minimalLog').innerHTML = '';
+    document.getElementById('minRewardCount').textContent = '0';
+    document.getElementById('minPenaltyCount').textContent = '0';
+    document.getElementById('minRewardTotal').textContent = '0.0';
+    document.getElementById('minWaterUsed').textContent = '0 L';
+    document.getElementById('minWaterSaved').textContent = '0 L';
+    document.getElementById('minMoneySaved').textContent = '₹0.00';
+
+    const thinkingEl = document.getElementById('minimalThinking');
+    const plantIcon = document.getElementById('minimalPlantIcon');
+    const plantBar = document.getElementById('minimalPlantBar');
+    const plantPct = document.getElementById('minimalPlantPct');
+
+    // Make sure we start from whatever scenario was last applied
+    await updateState();
+    if (!state) {
+        appendMinimalLogLine('Environment not ready. Configure a scenario and reset first.');
+        minimalRunning = false;
+        return;
+    }
+
+    const days = Number(state.n_days || 30);
+    const stepsPerDay = Number(state.max_steps_per_day || 4);
+    const perDayMs = Math.max(30, Math.floor(20000 / Math.max(1, days)));
+
+    const cropEmoji = {
+        wheat: '🌾',
+        rice: '🌾',
+        corn: '🌽',
+        tomato: '🍅',
+        soybean: '🌱',
+        auto: '🌱',
+    }[scenarioConfig.crop] || '🌱';
+    if (plantIcon) plantIcon.textContent = cropEmoji;
+
+    for (let dayIdx = 0; dayIdx < days && minimalRunning; dayIdx++) {
+        const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        if (thinkingEl) { thinkingEl.style.display = 'inline-block'; thinkingEl.classList.add('show'); }
+
+        let dayWater = 0;
+        let dayFert = 0;
+        let dayReward = 0;
+        let anyAction = false;
+
+        for (let s = 0; s < stepsPerDay; s++) {
+            const res = await apiCall('/auto-step', 'POST');
+            if (!res) { minimalRunning = false; break; }
+            const info = res.info || {};
+            minimalLastInfo = info;
+
+            const za = info.last_action?.zone_actions || [];
+            if (za.some(a => a > 0)) anyAction = true;
+
+            const w = Number(info.water_used_step || 0);
+            dayWater += w;
+
+            const fert = info.fertilizer_kg_ha_step || {};
+            dayFert += (Number(fert.a||0)+Number(fert.b||0)+Number(fert.c||0));
+
+            const rew = Number(res.reward || 0);
+            dayReward += rew;
+
+            if (rew > 0) minimalRewardCount += 1;
+            if (rew < 0) minimalPenaltyCount += 1;
+            minimalRewardTotal += rew;
+        }
+
+        if (thinkingEl) { thinkingEl.classList.remove('show'); thinkingEl.style.display = 'none'; }
+
+        document.getElementById('minRewardCount').textContent = String(minimalRewardCount);
+        document.getElementById('minPenaltyCount').textContent = String(minimalPenaltyCount);
+        document.getElementById('minRewardTotal').textContent = minimalRewardTotal.toFixed(2);
+
+        const actionText = anyAction
+            ? `Irrigated today (${dayWater.toFixed(0)} L)`
+            : `No irrigation today`;
+        const fertText = dayFert > 0.05 ? `, nutrients ${dayFert.toFixed(1)} kg/ha` : `, no nutrients`;
+        appendMinimalLogLine(`Day ${dayIdx}: ${actionText}${fertText}. Reward ${dayReward.toFixed(2)}.`);
+
+        const pct = Math.min(100, Math.round(((dayIdx + 1) / days) * 100));
+        if (plantBar) plantBar.style.width = `${pct}%`;
+        if (plantPct) plantPct.textContent = `${pct}%`;
+
+        const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        const elapsed = Math.max(0, t1 - t0);
+        const wait = Math.max(0, perDayMs - elapsed);
+        if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    }
+
+    // Final profit summary from latest /state (includes ROI)
+    const finalState = await apiCall('/state');
+    if (finalState && finalState.roi) {
+        const used = (finalState.water_used_liters || 0);
+        const saved = (finalState.roi.water_saved || 0);
+        const money = (finalState.roi.money_saved || 0);
+        document.getElementById('minWaterUsed').textContent = `${used.toFixed(0)} L`;
+        document.getElementById('minWaterSaved').textContent = `${saved.toFixed(0)} L`;
+        document.getElementById('minMoneySaved').textContent = `₹${Math.round(money)}`;
+        appendMinimalLogLine(`Crop finished growing in ${finalState.day_of_season} days. Water used: ${used.toFixed(0)} L. Water saved: ${saved.toFixed(0)} L. Money saved: ₹${Math.round(money)}.`);
+    }
+
+    await updateState();
+    minimalRunning = false;
+}
+
+document.getElementById('resetBtn').onclick = reset;
+document.getElementById('manualStepBtn').onclick = runManualStep;
+document.getElementById('autoStepBtn').onclick = runAutoStep;
+document.getElementById('loopBtn').onclick = async () => {
+    if (isRunning) { isRunning=false; document.getElementById('loopBtn').innerText='▶ Auto Run Loop'; return; }
+    isRunning=true; document.getElementById('loopBtn').innerText='⏹ Stop Loop';
+    while(isRunning) { if(await runAutoStep()) break; await new Promise(r=>setTimeout(r,600)); }
+    isRunning=false; document.getElementById('loopBtn').innerText='▶ Auto Run Loop';
+};
+document.getElementById('minimalStartBtn').onclick = runMinimalSimulation;
+
+// Minimal UI toggle
+document.getElementById('minimalUiToggle').onclick = () => {
+    const full = document.getElementById('fullUiRoot');
+    const min = document.getElementById('minimalUiRoot');
+    const btn = document.getElementById('minimalUiToggle');
+    const showingMinimal = min.style.display === 'flex';
+    if (showingMinimal) {
+        min.style.display = 'none';
+        full.style.display = '';
+        btn.textContent = 'Minimal UI';
+        updateState();
+        refreshMinimalScenarioSummary();
+    } else {
+        refreshMinimalScenarioSummary();
+        full.style.display = 'none';
+        min.style.display = 'flex';
+        btn.textContent = 'Full UI';
+    }
+};
+
+window.onload = () => {
+    initCharts();
+    resetScenarioDefaults();
+    document.getElementById('scenarioCrop').addEventListener('change', () => {
+        syncCropSeasonLocks('crop');
+        renderScenarioNutrientSliders();
+        updateScenarioSummary();
+    });
+    document.getElementById('scenarioSeason').addEventListener('change', () => {
+        syncCropSeasonLocks('season');
+        updateScenarioSummary();
+    });
+    document.getElementById('welcomeGoBtn').onclick = () => {
+        document.getElementById('welcomeBackdrop').style.display = 'none';
+        openScenarioModal();
+    };
+    document.getElementById('welcomeBackdrop').style.display = 'flex';
+};
+</script>
+</body>
+</html>
