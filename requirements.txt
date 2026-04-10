@@ -7,3 +7,4 @@ uvicorn>=0.24
 pydantic>=2.0
 pytest>=7.0
 httpx>=0.25
+openai>=1.0
