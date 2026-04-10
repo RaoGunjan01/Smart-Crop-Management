@@ -66,7 +66,8 @@ class IrrigationEnv(gym.Env):
         self._episode_log: list[dict[str, Any]] = []
         self._accumulated_stress: list[float] = []
         self._step_count: int = 0
-        self._cost_per_liter: float = 0.05
+        # Approx irrigation operating cost in INR per liter.
+        self._cost_per_liter: float = 0.008
 
         self._nutrients: dict[str, float] = {"a": 60.0, "b": 50.0, "c": 55.0}
         self._pending_fertilizer_kg_ha: dict[str, float] = {"a": 0.0, "b": 0.0, "c": 0.0}
@@ -316,11 +317,18 @@ class IrrigationEnv(gym.Env):
         sim = self._sim
         n = self.task_config.n_zones
         budget = self.task_config.water_budget_liters
+        noise_std = float(getattr(self.task_config, "sensor_noise_std", 0.0))
+
+        soil_m = sim.soil_moisture.astype(np.float32).copy()
+        stress = sim.stress_index.astype(np.float32).copy()
+        if noise_std > 0.0:
+            soil_m = np.clip(soil_m + sim.rng.normal(0.0, noise_std, size=n).astype(np.float32), 0.0, 1.0)
+            stress = np.clip(stress + sim.rng.normal(0.0, noise_std * 0.5, size=n).astype(np.float32), 0.0, 1.0)
 
         per_zone = np.concatenate([
-            sim.soil_moisture.astype(np.float32),
+            soil_m,
             sim.crop_growth_stage.astype(np.float32),
-            sim.stress_index.astype(np.float32),
+            stress,
             np.clip(sim.days_since_irrigation / 30.0, 0.0, 1.0).astype(np.float32),
         ])
 

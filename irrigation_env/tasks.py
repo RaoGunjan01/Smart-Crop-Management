@@ -27,10 +27,10 @@ class TaskConfig:
 EASY = TaskConfig(
     name="easy",
     n_zones=1,
-    n_days=30,
+    n_days=24,
     sensor_noise_std=0.0,
-    water_budget_liters=10_000,
-    rain_probability=0.3,
+    water_budget_liters=24_000,
+    rain_probability=0.0,
     crop_type="wheat",
 )
 
@@ -38,9 +38,9 @@ MEDIUM = TaskConfig(
     name="medium",
     n_zones=4,
     n_days=60,
-    sensor_noise_std=0.05,
-    water_budget_liters=8_000,
-    rain_probability=0.2,
+    sensor_noise_std=0.03,
+    water_budget_liters=12_000,
+    rain_probability=0.22,
     crop_type="mixed",
 )
 
@@ -48,9 +48,9 @@ HARD = TaskConfig(
     name="hard",
     n_zones=8,
     n_days=90,
-    sensor_noise_std=0.1,
-    water_budget_liters=4_000,
-    rain_probability=0.1,
+    sensor_noise_std=0.08,
+    water_budget_liters=6_000,
+    rain_probability=0.12,
     sensor_failure_probability=0.05,
     crop_type="mixed",
 )

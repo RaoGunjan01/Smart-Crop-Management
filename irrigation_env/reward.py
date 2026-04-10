@@ -86,6 +86,12 @@ def compute_reward(
         rain_waste_penalty = -0.15
     components["rain_waste_penalty"] = float(rain_waste_penalty)
 
+    # Medium task: reward learning to wait when significant rain is forecast.
+    rain_wait_reward = 0.0
+    if task_config.name == "medium" and rain_forecast > 10.0 and not any_irrigated:
+        rain_wait_reward = 0.10
+    components["rain_wait_reward"] = float(rain_wait_reward)
+
     # ------------------------------------------------------------------
     # Nutrients: reward balanced soil, penalize deficiency/excess, and add a small fertilizer cost
     # ------------------------------------------------------------------
@@ -114,6 +120,21 @@ def compute_reward(
         fert_total = 0.0
     fert_cost = -0.01 * (fert_total / 10.0)  # small cost so "more fertilizer" isn't always better
     components["fertilizer_cost"] = float(fert_cost)
+
+    # Hard task: prioritise critical growth stages and ration under scarcity.
+    critical_stage_penalty = 0.0
+    scarcity_penalty = 0.0
+    if task_config.name == "hard":
+        stages = np.asarray(next_state.get("crop_growth_stage", np.zeros(n)))
+        critical_mask = stages >= 2  # flowering + maturity windows
+        critical_stress = np.sum(critical_mask & (stress_now > 0.35))
+        critical_stage_penalty = -0.18 * float(critical_stress)
+
+        budget_remaining = float(next_state.get("water_budget_remaining", 1.0))
+        if budget_remaining < 0.35 and baseline_water > 0:
+            scarcity_penalty = -0.12 * float(water_this_step / baseline_water)
+    components["critical_stage_penalty"] = float(critical_stage_penalty)
+    components["scarcity_penalty"] = float(scarcity_penalty)
 
     # ------------------------------------------------------------------
     # +1.00  episode-end bonus if average_yield_score > 0.75

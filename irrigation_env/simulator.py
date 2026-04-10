@@ -25,6 +25,7 @@ class SoilMoistureSimulator:
         self.total_steps = task_config.n_days * 4
         self.water_budget = task_config.water_budget_liters
         self.rng = np.random.default_rng(seed)
+        self.rain_probability = float(getattr(task_config, "rain_probability", 0.1))
 
         # Environment State
         self.current_step = 0
@@ -66,7 +67,8 @@ class SoilMoistureSimulator:
         """Advance simulation by 6 hours."""
         prev_stress = self.stress_index.copy()
 
-        self.traditional_water_liters += 40.0 * self.n_zones * float(self.land_ha)
+        # Baseline "traditional" irrigation benchmark per step (liters).
+        self.traditional_water_liters += 25.0 * self.n_zones * float(self.land_ha)
 
         # 1. Global action override (Same as before)
         if global_action == 6:  # PAUSE_ALL
@@ -170,7 +172,7 @@ class SoilMoistureSimulator:
 
         # Rain pattern
         season_rain = {"spring": 0.10, "summer": 0.06, "monsoon": 0.18, "winter": 0.03}
-        rain_prob = float(season_rain.get(self.season, 0.08))
+        rain_prob = float(season_rain.get(self.season, 0.08)) * max(0.0, self.rain_probability)
         if self.rng.random() < rain_prob:
             self.rain_forecast_mm = self.rng.uniform(5.0, 30.0)
         else:
