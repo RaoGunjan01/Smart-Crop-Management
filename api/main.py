@@ -6,7 +6,7 @@ import webbrowser
 from typing import Any, Optional
 
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -65,24 +65,38 @@ async def health() -> HealthResponse:
 
 
 @app.post("/reset")
-async def reset(request: ResetRequest) -> dict[str, Any]:
+async def reset(body: dict[str, Any] | None = Body(default=None)) -> dict[str, Any]:
     global _env
     try:
-        _env = IrrigationEnv(task=request.task)
+        # Accept both plain payloads and wrappers like {"input": {...}}.
+        payload = body or {}
+        if isinstance(payload.get("input"), dict):
+            payload = payload["input"]
+
+        req = ResetRequest(
+            task=payload.get("task", payload.get("msg", "easy")),
+            seed=payload.get("seed", 42),
+            crop=payload.get("crop"),
+            season=payload.get("season"),
+            land_ha=payload.get("land_ha"),
+            nutrients=payload.get("nutrients") or {},
+        )
+
+        _env = IrrigationEnv(task=req.task)
         obs, info = _env.reset(
-            seed=request.seed,
+            seed=req.seed,
             options={
-                "crop": request.crop,
-                "season": request.season,
-                "land_ha": request.land_ha,
-                "nutrients": request.nutrients or {},
+                "crop": req.crop,
+                "season": req.season,
+                "land_ha": req.land_ha,
+                "nutrients": req.nutrients or {},
             },
         )
 
         return {
             "observation": _obs_to_list(obs),
             "info": info,
-            "task": request.task,
+            "task": req.task,
             "n_zones": _env.task_config.n_zones,
         }
     except Exception as e:
