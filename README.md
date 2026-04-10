@@ -4,7 +4,7 @@ emoji: 🌾
 colorFrom: green
 colorTo: blue
 sdk: docker
-app_port: 7860
+app_port: 8000
 pinned: false
 ---
 

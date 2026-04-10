@@ -982,7 +982,7 @@
 
     <div class="tab-page" id="tab-weather">
         <div class="chart-card">
-            <div class="card-title">Recent Weather (Agent Data)</div>
+        <div class="card-title">Recent Weather (Observed)</div>
             <div class="weather-timeline" id="weatherTimeline"></div>
         </div>
         <div class="two-col">
@@ -991,7 +991,7 @@
                 <div style="height:200px"><canvas id="weatherTrendChart"></canvas></div>
             </div>
             <div class="chart-card">
-                <div class="card-title">Evapotranspiration Forecast</div>
+                <div class="card-title">Evapotranspiration Trend</div>
                 <div style="height:200px"><canvas id="etForecastChart"></canvas></div>
             </div>
         </div>
@@ -1472,33 +1472,33 @@ const WEATHER_ICONS = ['☀️','⛅','🌥','🌦','🌧','⛈'];
 function updateWeatherPanel(s) {
     if (!s) return;
     const timeline = document.getElementById('weatherTimeline');
-    const days = ['-6', '-5', '-4', '-3', '-2', '-1', 'Now'];
     weatherHistory.temp.push(Number(s.temp_c.toFixed(1)));
     weatherHistory.humidity.push(Math.round(s.humidity*100));
     weatherHistory.et.push(Number(s.evapotranspiration.toFixed(2)));
     if (weatherHistory.temp.length > 7) weatherHistory.temp.shift();
     if (weatherHistory.humidity.length > 20) weatherHistory.humidity.shift();
     if (weatherHistory.et.length > 20) weatherHistory.et.shift();
-    const pad = 7 - weatherHistory.temp.length;
-    const tempSeries = Array(Math.max(0, pad)).fill(weatherHistory.temp[0] ?? s.temp_c).concat(weatherHistory.temp);
-    timeline.innerHTML = tempSeries.map((t, i) => {
-        const h = weatherHistory.humidity[Math.max(0, weatherHistory.humidity.length - 7 + i)] ?? Math.round(s.humidity * 100);
+    const recent = weatherHistory.temp.slice(-7);
+    const start = Math.max(0, weatherHistory.temp.length - recent.length) + 1;
+    const labels = Array.from({length: recent.length}, (_, i) => `S${start + i}`);
+    timeline.innerHTML = recent.map((t, i) => {
+        const h = weatherHistory.humidity[Math.max(0, weatherHistory.humidity.length - recent.length + i)] ?? Math.round(s.humidity * 100);
         const icon = WEATHER_ICONS[Math.min(5, Math.floor((100 - h) / 20))];
-        const todayClass = i === tempSeries.length - 1 ? 'today' : '';
+        const todayClass = i === recent.length - 1 ? 'today' : '';
         return `<div class="weather-day ${todayClass}">
-            <div class="w-day-label">${days[i]}</div>
+            <div class="w-day-label">${labels[i]}</div>
             <div class="w-icon">${icon}</div>
             <div class="w-temp">${Number(t).toFixed(1)}°</div>
             <div class="w-rain">H ${h}%</div>
         </div>`;
     }).join('');
 
-    const labels = Array.from({length: weatherHistory.temp.length}, (_,i) => i+1);
-    chartWeatherTrend.data.labels = labels;
+    const trendLabels = Array.from({length: weatherHistory.temp.length}, (_,i) => i+1);
+    chartWeatherTrend.data.labels = trendLabels;
     chartWeatherTrend.data.datasets[0].data = [...weatherHistory.temp];
     chartWeatherTrend.data.datasets[1].data = [...weatherHistory.humidity];
     chartWeatherTrend.update();
-    chartETForecast.data.labels = labels;
+    chartETForecast.data.labels = trendLabels;
     chartETForecast.data.datasets[0].data = [...weatherHistory.et];
     chartETForecast.update();
 }
@@ -1528,11 +1528,11 @@ async function updateState() {
     state = s;
     const n = s.n_zones;
 
-    const seasonAvgTemp = { spring: 22, summer: 31, monsoon: 27, winter: 14 };
-    const avgTemp = seasonAvgTemp[s.season] ?? 25;
+    const rollingTemps = weatherHistory.temp.length ? weatherHistory.temp : [Number(s.temp_c || 0)];
+    const avgTemp = rollingTemps.reduce((a,b)=>a+b,0) / Math.max(rollingTemps.length, 1);
     document.getElementById('vTemp').innerText = `${avgTemp.toFixed(1)}°C`;
     document.getElementById('vTemp').style.color = 'white';
-    document.getElementById('vTempSub').innerText = `${(s.season || 'season').toUpperCase()} average`;
+    document.getElementById('vTempSub').innerText = `Current ${Number(s.temp_c).toFixed(1)}°C`;
     document.getElementById('vHum').innerText = `${(s.humidity*100).toFixed(0)}%`;
     document.getElementById('vRain').innerText = `${s.rain_forecast_mm.toFixed(1)}mm`;
     if (s.roi) {

@@ -3,6 +3,10 @@ from __future__ import annotations
 import os
 import threading
 import webbrowser
+import json
+import time
+import importlib.util
+from urllib import request as urlrequest
 from typing import Any, Optional
 
 import numpy as np
@@ -15,6 +19,45 @@ from pydantic import BaseModel
 from irrigation_env.env import IrrigationEnv
 
 app = FastAPI(title="Smart Crop Management Sytem")
+
+
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict[str, Any]) -> None:
+    # #region agent log
+    try:
+        _payload = {
+            "sessionId": "2551d1",
+            "runId": "pre-fix",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        _req = urlrequest.Request(
+            "http://127.0.0.1:7838/ingest/af1c3a79-2640-4083-bfcb-ed202ffe4dff",
+            data=json.dumps(_payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "X-Debug-Session-Id": "2551d1"},
+            method="POST",
+        )
+        with urlrequest.urlopen(_req, timeout=1.5):
+            pass
+    except Exception:
+        pass
+    # #endregion
+
+
+# #region agent log
+_debug_log(
+    "H2",
+    "api/main.py:module",
+    "api module imported",
+    {
+        "openai_installed": importlib.util.find_spec("openai") is not None,
+        "port_env": os.getenv("PORT"),
+        "space_id_present": bool(os.getenv("HF_SPACE_ID") or os.getenv("SPACE_ID")),
+    },
+)
+# #endregion
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +74,9 @@ app.mount("/ui", StaticFiles(directory=ui_path), name="ui")
 
 @app.on_event("startup")
 async def _startup() -> None:
+    # Only auto-open browser when explicitly enabled for local interactive use.
+    if not os.getenv("ENABLE_LOCAL_BROWSER"):
+        return
     if os.getenv("HF_SPACE_ID") or os.getenv("SPACE_ID"):
         return
     def _open() -> None:
@@ -61,6 +107,9 @@ class HealthResponse(BaseModel):
 
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
+    # #region agent log
+    _debug_log("H3", "api/main.py:health", "health endpoint called", {"status": "ok"})
+    # #endregion
     return HealthResponse(status="ok", rl_active=False)
 
 
@@ -68,6 +117,14 @@ async def health() -> HealthResponse:
 async def reset(body: dict[str, Any] | None = Body(default=None)) -> dict[str, Any]:
     global _env
     try:
+        # #region agent log
+        _debug_log(
+            "H4",
+            "api/main.py:reset_enter",
+            "reset invoked",
+            {"has_body": body is not None, "body_keys": list((body or {}).keys())},
+        )
+        # #endregion
         # Accept both plain payloads and wrappers like {"input": {...}}.
         payload = body or {}
         if isinstance(payload.get("input"), dict):

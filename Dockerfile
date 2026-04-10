@@ -11,7 +11,9 @@ COPY irrigation_env/ ./irrigation_env/
 COPY api/ ./api/
 COPY agents/ ./agents/
 COPY ui/ ./ui/
+COPY inference.py ./inference.py
+COPY openenv.yaml ./openenv.yaml
 
-EXPOSE 7860
+EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
