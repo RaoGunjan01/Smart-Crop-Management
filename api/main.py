@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import os
-import math
 import threading
 import webbrowser
 from typing import Any, Optional
 
 import numpy as np
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from irrigation_env.env import IrrigationEnv
 
@@ -36,8 +35,7 @@ async def _startup() -> None:
         return
     def _open() -> None:
         try:
-            port = os.getenv("PORT", "8000")
-            webbrowser.open(f"http://localhost:{port}/ui/dashboard.html", new=2)
+            webbrowser.open("http://localhost:8000/ui/dashboard.html", new=2)
         except Exception:
             pass
     threading.Timer(0.5, _open).start()
@@ -61,35 +59,13 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     rl_active: bool = False
 
-class ResetResponse(BaseModel):
-    observation: list[float]
-    info: dict[str, Any]
-    task: str
-    n_zones: int
-
-class StepResponse(BaseModel):
-    observation: list[float]
-    reward: float
-    terminated: bool
-    truncated: bool
-    info: dict[str, Any]
-    reasoning: Optional[str] = None
-
-class StateResponse(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    soil_moisture: list[float]
-    stress_index: list[float]
-    water_used_liters: float
-    traditional_water_liters: float
-    cost_per_liter: float
-
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     return HealthResponse(status="ok", rl_active=False)
 
 
-@app.post("/reset", response_model=ResetResponse)
-async def reset(request: ResetRequest = Body(default_factory=ResetRequest)) -> ResetResponse:
+@app.post("/reset")
+async def reset(request: ResetRequest) -> dict[str, Any]:
     global _env
     try:
         _env = IrrigationEnv(task=request.task)
@@ -103,18 +79,18 @@ async def reset(request: ResetRequest = Body(default_factory=ResetRequest)) -> R
             },
         )
 
-        return ResetResponse(
-            observation=_obs_to_list(obs),
-            info=info,
-            task=request.task,
-            n_zones=_env.task_config.n_zones,
-        )
+        return {
+            "observation": _obs_to_list(obs),
+            "info": info,
+            "task": request.task,
+            "n_zones": _env.task_config.n_zones,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Reset failed: {str(e)}")
 
 
-@app.post("/step", response_model=StepResponse)
-async def step(request: StepRequest) -> StepResponse:
+@app.post("/step")
+async def step(request: StepRequest) -> dict[str, Any]:
     if _env is None:
         raise HTTPException(status_code=400, detail="Call /reset first.")
 
@@ -128,19 +104,19 @@ async def step(request: StepRequest) -> StepResponse:
             if k != "episode_log"
         }
 
-        return StepResponse(
-            observation=_obs_to_list(obs),
-            reward=float(reward),
-            terminated=terminated,
-            truncated=truncated,
-            info=info_serialisable,
-        )
+        return {
+            "observation": _obs_to_list(obs),
+            "reward": float(reward),
+            "terminated": terminated,
+            "truncated": truncated,
+            "info": info_serialisable,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Step failed: {str(e)}")
 
 
-@app.post("/auto-step", response_model=StepResponse)
-async def auto_step() -> StepResponse:
+@app.post("/auto-step")
+async def auto_step() -> dict[str, Any]:
     if _env is None:
         raise HTTPException(status_code=400, detail="Call /reset first.")
 
@@ -184,25 +160,22 @@ async def auto_step() -> StepResponse:
         else:
             reason = "Moisture levels optimal. No action required."
             
-        res.reasoning = reason_prefix + reason
+        res["reasoning"] = reason_prefix + reason
         return res
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Auto-step failed: {str(e)}")
 
 
-@app.get("/state", response_model=StateResponse)
-async def get_state() -> StateResponse:
+@app.get("/state")
+async def get_state() -> dict[str, Any]:
     if _env is None:
         raise HTTPException(status_code=400, detail="Call /reset first.")
     
     res = _state_to_serialisable(_env.state())
     
     water_saved = max(0, res["traditional_water_liters"] - res["water_used_liters"])
-    raw_money_saved = water_saved * res["cost_per_liter"]
-    land_ha = float(res.get("land_ha", 1.0) or 1.0)
-    money_cap = 500.0 * math.sqrt(max(0.1, land_ha))
-    money_saved = min(raw_money_saved, money_cap)
+    money_saved = water_saved * res["cost_per_liter"]
     health_score = 100 * (1.0 - np.mean(res["stress_index"]))
     water_eff = water_saved / max(res["traditional_water_liters"], 1)
     eco_score = (health_score * 0.6 + water_eff * 100 * 0.4)
@@ -222,7 +195,7 @@ async def get_state() -> StateResponse:
         projections.append(float(p))
     res["projections"] = projections
     
-    return StateResponse(**res)
+    return res
 
 def _obs_to_list(obs: np.ndarray) -> list[float]:
     return [float(x) for x in obs]

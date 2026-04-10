@@ -11,8 +11,6 @@ COPY irrigation_env/ ./irrigation_env/
 COPY api/ ./api/
 COPY agents/ ./agents/
 COPY ui/ ./ui/
-COPY openenv.yaml ./openenv.yaml
-COPY inference.py ./inference.py
 
 EXPOSE 7860
 

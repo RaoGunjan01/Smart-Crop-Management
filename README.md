@@ -1,5 +1,5 @@
 ---
-title: Smart Crop Management Sytem
+title: Smart Crop Management System
 emoji: 🌾
 colorFrom: green
 colorTo: blue
@@ -8,7 +8,7 @@ app_port: 7860
 pinned: false
 ---
 
-# Smart Crop Management Sytem
+# Smart Crop Management System
 
 A complete **OpenEnv-compatible** Gymnasium environment for smart crop irrigation and nutrient-aware growth simulation. Designed for demo use, it simulates multi-zone soil moisture dynamics, weather, and crop growth.
 
