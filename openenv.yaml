@@ -42,24 +42,32 @@ graders:
 
 tasks:
   - id: easy
-    name: easy
-    description: 1 zone, short season, generous budget
+    name: Don't Kill the Crop
+    description: >
+      Keep crop stress under control from start to finish.
+      Works on any zone count, any season, any budget.
+      Tests the most fundamental agent skill: stress prevention.
     difficulty: 1
     max_steps: 120
     reward_range: [0.0, 1.0]
     grader: irrigation_env.grader:grade_easy
 
   - id: medium
-    name: medium
-    description: 4 zones, moderate budget, rain forecasts
+    name: Respect the Rain
+    description: >
+      Learn to read the rain forecast and hold back irrigation when rain is coming.
+      Works on any configuration. Tests forecast-awareness and resource restraint.
     difficulty: 2
     max_steps: 240
     reward_range: [0.0, 1.0]
     grader: irrigation_env.grader:grade_medium
 
   - id: hard
-    name: hard
-    description: 8 zones, scarce budget, sensor noise
+    name: Do More With Less
+    description: >
+      Achieve the best possible crop yield using the least possible water.
+      Simultaneously optimise two competing objectives at every step.
+      The only way to score well is precise, timely irrigation.
     difficulty: 3
     max_steps: 360
     reward_range: [0.0, 1.0]

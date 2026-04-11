@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import io
 import os
 import threading
 import webbrowser
@@ -15,8 +17,16 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from irrigation_env.env import IrrigationEnv
+from irrigation_env.grader import grade_easy, grade_hard, grade_medium
 
 from .llm_proxy import ensure_llm_proxy_traffic, irrigation_advice_line
+
+# Universal behaviour tasks (labels for UI / openenv; simulator geometry from TaskConfig).
+IRRIGATION_TASK_META: dict[str, dict[str, str]] = {
+    "easy": {"title": "Don't Kill the Crop", "focus": "Keep mean stress under control."},
+    "medium": {"title": "Respect the Rain", "focus": "Restrain irrigation when rain is forecast."},
+    "hard": {"title": "Do More With Less", "focus": "Balance stress vs water use."},
+}
 
 
 @asynccontextmanager
@@ -291,6 +301,27 @@ async def get_state() -> dict[str, Any]:
         p = max(0.0, curr_m - (et * i))
         projections.append(float(p))
     res["projections"] = projections
+
+    tc = _env.task_config
+    tid = str(tc.name)
+    meta = IRRIGATION_TASK_META.get(tid, {"title": tid, "focus": ""})
+    res["irrigation_task_id"] = tid
+    res["irrigation_task_title"] = meta["title"]
+    res["irrigation_task_focus"] = meta["focus"]
+    res["water_budget_liters"] = float(tc.water_budget_liters)
+    res["episode_step_count"] = len(_env.episode_log)
+
+    log = _env.episode_log
+    if log:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            res["universal_grades"] = {
+                "dont_kill_crop": float(grade_easy(log)),
+                "respect_the_rain": float(grade_medium(log)),
+                "do_more_with_less": float(grade_hard(log)),
+            }
+    else:
+        res["universal_grades"] = None
 
     return res
 

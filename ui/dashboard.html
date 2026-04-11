@@ -735,7 +735,7 @@
             <div>
                 <label>Crop</label>
                 <select id="scenarioCrop" style="margin-top:0.3rem;">
-                    <option value="auto">Auto (from difficulty)</option>
+                    <option value="auto">Auto (task default crop)</option>
                     <option value="wheat">Wheat</option>
                     <option value="corn">Corn</option>
                     <option value="rice">Rice</option>
@@ -801,9 +801,9 @@
         <div>
             <label>Task Difficulty</label>
             <select id="difficulty" style="margin-top:0.3rem;">
-                <option value="easy">Easy — 1 Zone, no rain, forgiving budget</option>
-                <option value="medium">Medium — 4 Zones, forecast-based waiting</option>
-                <option value="hard" selected>Hard — 8 Zones, scarce water triage</option>
+                <option value="easy">Easy — Don't Kill the Crop (sim: 1 zone, generous budget)</option>
+                <option value="medium">Medium — Respect the Rain (sim: 4 zones, rain forecasts)</option>
+                <option value="hard" selected>Hard — Do More With Less (sim: 8 zones, tight budget)</option>
             </select>
         </div>
         <div>
@@ -828,6 +828,8 @@
             <span class="stat-label">Day:</span><span class="stat-val" id="stDay">0</span>
             <span class="stat-label">Water Used:</span><span class="stat-val" id="stWater">0 L</span>
             <span class="stat-label">Zones:</span><span class="stat-val" id="stZones">—</span>
+            <span class="stat-label">Budget cap:</span><span class="stat-val" id="stBudget">—</span>
+            <span class="stat-label">Episode steps:</span><span class="stat-val" id="stLogSteps">0</span>
         </div>
     </div>
 
@@ -878,6 +880,27 @@
             <div class="metric-card">
                 <label>ECO SCORE</label>
                 <div class="metric-val" id="vEco" style="color:var(--accent-yellow)">0</div>
+            </div>
+        </div>
+
+        <div class="chart-card" style="margin-top:0.2rem;">
+            <div class="card-title">UNIVERSAL AGENT SCORES (BACKEND GRADERS · CURRENT EPISODE LOG)</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:0.65rem;line-height:1.45;">
+                Each value is computed on the server from the live <code style="font-size:0.65rem;">episode_log</code> using <code style="font-size:0.65rem;">irrigation_env.grader</code>. No steps yet → shows —.
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.85rem;">
+                <div class="metric-card" style="padding:0.75rem;border-left:3px solid var(--accent-green);">
+                    <label style="font-size:0.58rem;">DON'T KILL THE CROP</label>
+                    <div class="metric-val" id="gradeDontKill" style="font-size:1.35rem;">—</div>
+                </div>
+                <div class="metric-card" style="padding:0.75rem;border-left:3px solid var(--accent-blue);">
+                    <label style="font-size:0.58rem;">RESPECT THE RAIN</label>
+                    <div class="metric-val" id="gradeRespectRain" style="font-size:1.35rem;">—</div>
+                </div>
+                <div class="metric-card" style="padding:0.75rem;border-left:3px solid var(--accent-orange);">
+                    <label style="font-size:0.58rem;">DO MORE WITH LESS</label>
+                    <div class="metric-val" id="gradeDoMore" style="font-size:1.35rem;">—</div>
+                </div>
             </div>
         </div>
 
@@ -942,26 +965,29 @@
         <div class="nutrient-grid" id="nutrientCards"></div>
 
         <div class="nutrient-rec-box">
-            <div class="rec-title">🧪 AI Nutrition Recommendations</div>
+            <div class="rec-title">🧪 Nutrient status (simulation model)</div>
             <div id="nutrientRecs"></div>
         </div>
     </div>
 
     <div class="tab-page" id="tab-crop">
         <div class="yield-projector">
-            <div class="card-title">YIELD PROJECTOR — CURRENT SEASON</div>
+            <div class="card-title">CROP METRICS — FROM SIMULATION STATE</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary);margin:-0.35rem 0 0.75rem;line-height:1.45;">
+                Numbers below are read directly from the environment state returned by <code style="font-size:0.65rem;">GET /state</code> (no client-side yield model).
+            </div>
             <div class="yield-grid">
                 <div class="yield-stat">
                     <div class="yield-val green" id="yYield">--</div>
-                    <div class="yield-label">Est. Yield (kg/ha)</div>
+                    <div class="yield-label">Mean growth stage (0–3)</div>
                 </div>
                 <div class="yield-stat">
                     <div class="yield-val" id="yHealth" style="color:var(--accent-yellow)">--%</div>
-                    <div class="yield-label">Crop Health Score</div>
+                    <div class="yield-label">Health index (server ROI)</div>
                 </div>
                 <div class="yield-stat">
                     <div class="yield-val" id="yDaysLeft" style="color:var(--accent-blue)">-- d</div>
-                    <div class="yield-label">Days to Harvest</div>
+                    <div class="yield-label">Days left in season</div>
                 </div>
             </div>
         </div>
@@ -1026,6 +1052,7 @@
             <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.4rem;" id="minScenarioSummary">
                 Configure a scenario first, then start the minimal simulation.
             </div>
+            <div id="minUniversalGrades" style="font-size:0.72rem;font-family:'JetBrains Mono',monospace;color:var(--text-secondary);margin-top:0.45rem;line-height:1.5;min-height:1.2em;"></div>
             <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:0.8rem;align-items:flex-end;">
                 <div>
                     <label>Crop duration (days)</label>
@@ -1128,9 +1155,13 @@ let scenarioConfig = {
 // Helper to refresh minimal UI scenario blurb from current config
 function refreshMinimalScenarioSummary() {
     const cropKey = scenarioConfig.crop;
-    const cropName = cropKey === 'auto'
-        ? (CROP_TYPES[document.getElementById('difficulty').value] || 'Mixed')
-        : (CROP_TYPES[cropKey] || 'Mixed');
+    let cropName;
+    if (cropKey === 'auto') {
+        const sc = state && state.crop ? String(state.crop) : '';
+        cropName = sc ? sc.charAt(0).toUpperCase() + sc.slice(1) : 'Task default (from server after reset)';
+    } else {
+        cropName = CROP_TYPES[cropKey] || cropKey;
+    }
     const seasonMap = { spring:'Spring', summer:'Summer', monsoon:'Monsoon', winter:'Winter' };
     const moistMap = { dry:'Dry starting soil', optimal:'Optimal starting soil', wet:'Wet / waterlogged risk' };
     const nut = scenarioConfig.nutrients || { a: 0, b: 0, c: 0 };
@@ -1168,7 +1199,7 @@ function initCharts() {
     chartNutrientRadar = new Chart(document.getElementById('nutrientRadar'), {
         type: 'radar',
         data: { labels: ['N', 'P', 'K'], datasets: [
-            { label: 'Current', data: [60,50,55], borderColor: C.green, backgroundColor: 'rgba(0,229,160,0.1)', pointBackgroundColor: C.green }
+            { label: 'Current', data: [0, 0, 0], borderColor: C.green, backgroundColor: 'rgba(0,229,160,0.1)', pointBackgroundColor: C.green }
         ]},
         options: { ...globalOpts, scales: { r: { beginAtZero: true, max: 100, grid: { color: C.grid }, ticks: { color: C.text, backdropColor: 'transparent', font: { size: 9 } }, pointLabels: { color: C.text } } },
             plugins: { legend: { position: 'bottom', labels: { color: C.text, usePointStyle: true } } } }
@@ -1304,8 +1335,8 @@ function updateNutritionPanel(s) {
         const isGood = val >= lo && val <= hi;
         const isLow = val < lo;
         const statusClass = isGood ? 'status-good' : isLow ? 'status-low' : 'status-deficient';
-        const statusText = isGood ? '✓ Optimal' : isLow ? '⚠ Low' : '✗ Excess';
-        const display = `${Math.round(val)} mg/kg`;
+        const statusText = isGood ? '✓ In band' : isLow ? '⚠ Below band' : '✗ Above band';
+        const display = `${Math.round(val)} (sim index)`;
         container.innerHTML += `
             <div class="nutrient-card">
                 <div class="nutrient-name">${NUTRIENTS[ki]}</div>
@@ -1316,16 +1347,50 @@ function updateNutritionPanel(s) {
     });
 
     const recs = [];
-    if (avgNutrients.N < NUTRIENT_IDEAL.N[0]) recs.push(`<div class="rec-item">🌿 <strong>Low Nitrogen:</strong> Apply urea or ammonium nitrate — ~${Math.round((NUTRIENT_IDEAL.N[0]-avgNutrients.N)*0.5)} kg/ha recommended</div>`);
-    if (avgNutrients.P < NUTRIENT_IDEAL.P[0]) recs.push(`<div class="rec-item">🌱 <strong>Low Phosphorus:</strong> Apply DAP (di-ammonium phosphate) to improve root development</div>`);
-    if (avgNutrients.K < NUTRIENT_IDEAL.K[0]) recs.push(`<div class="rec-item">💪 <strong>Low Potassium:</strong> Potassium chloride application improves drought tolerance</div>`);
-    if (recs.length === 0) recs.push(`<div class="rec-item">✅ <strong>All nutrients optimal.</strong> Continue current management. Monitor weekly.</div>`);
+    recs.push(
+        `<div class="rec-item">Values are the simulator’s internal NPK-style indices (fields <code>a</code>, <code>b</code>, <code>c</code> from <code>GET /state</code>): ` +
+        `<strong>${Math.round(avgNutrients.N)} / ${Math.round(avgNutrients.P)} / ${Math.round(avgNutrients.K)}</strong>.</div>`
+    );
+    let anyBelowBand = false;
+    if (avgNutrients.N < NUTRIENT_IDEAL.N[0]) {
+        anyBelowBand = true;
+        recs.push(`<div class="rec-item">Nitrogen index is below the dashboard reference band (${NUTRIENT_IDEAL.N[0]}–${NUTRIENT_IDEAL.N[1]}). Raise the N slider before reset to increase it in the model.</div>`);
+    }
+    if (avgNutrients.P < NUTRIENT_IDEAL.P[0]) {
+        anyBelowBand = true;
+        recs.push(`<div class="rec-item">Phosphorus index is below the reference band (${NUTRIENT_IDEAL.P[0]}–${NUTRIENT_IDEAL.P[1]}). Adjust the P slider before reset.</div>`);
+    }
+    if (avgNutrients.K < NUTRIENT_IDEAL.K[0]) {
+        anyBelowBand = true;
+        recs.push(`<div class="rec-item">Potassium index is below the reference band (${NUTRIENT_IDEAL.K[0]}–${NUTRIENT_IDEAL.K[1]}). Adjust the K slider before reset.</div>`);
+    }
+    if (!anyBelowBand) {
+        recs.push(`<div class="rec-item">All three indices are at or above the lower edge of the UI reference bands at this step.</div>`);
+    }
     document.getElementById('nutrientRecs').innerHTML = recs.join('');
 }
 
+function updateUniversalGradesPanel(s) {
+    if (!s) return;
+    const g = s.universal_grades;
+    const fmt = (v) => (v == null || Number.isNaN(Number(v))) ? '—' : Number(v).toFixed(3);
+    const dk = document.getElementById('gradeDontKill');
+    const rr = document.getElementById('gradeRespectRain');
+    const dm = document.getElementById('gradeDoMore');
+    const minEl = document.getElementById('minUniversalGrades');
+    if (dk) dk.textContent = g ? fmt(g.dont_kill_crop) : '—';
+    if (rr) rr.textContent = g ? fmt(g.respect_the_rain) : '—';
+    if (dm) dm.textContent = g ? fmt(g.do_more_with_less) : '—';
+    if (minEl) {
+        if (!g) minEl.textContent = '';
+        else {
+            minEl.textContent = `Server grades (episode log): stress ${fmt(g.dont_kill_crop)} · rain ${fmt(g.respect_the_rain)} · efficiency ${fmt(g.do_more_with_less)}`;
+        }
+    }
+}
+
 const CROP_TYPES = {
-    easy: 'Wheat', medium: 'Mixed', hard: 'Mixed',
-    wheat: 'Wheat', corn: 'Corn', rice: 'Rice', tomato: 'Tomato', soybean: 'Soybean'
+    wheat: 'Wheat', corn: 'Corn', rice: 'Rice', tomato: 'Tomato', soybean: 'Soybean',
 };
 
 const CROP_NUTRIENT_PROFILES = {
@@ -1409,28 +1474,25 @@ function syncCropSeasonLocks(changed) {
 }
 const STAGE_LABELS = ['Germination', 'Vegetative', 'Flowering', 'Maturity'];
 const STAGE_CLASSES = ['stage-germination', 'stage-vegetative', 'stage-flowering', 'stage-mature'];
-const CROP_YIELD_BASE = { Wheat: 4500, Corn: 9000, Rice: 5500, Tomato: 60000, Soybean: 3000, Mixed: 6000 };
 
 function updateCropPanel(s) {
     if (!s) return;
     const n = s.n_zones;
-    const difficulty = document.getElementById('difficulty').value;
     const cropOverride = document.getElementById('cropOverride').value;
     const cropKey = (scenarioConfig.crop !== 'auto' ? scenarioConfig.crop : cropOverride);
     const cropName = cropKey === 'auto'
-        ? (CROP_TYPES[difficulty] || 'Mixed')
-        : (CROP_TYPES[cropKey] || 'Mixed');
+        ? (s.crop ? (String(s.crop).charAt(0).toUpperCase() + String(s.crop).slice(1)) : 'Auto')
+        : (CROP_TYPES[cropKey] || cropKey);
 
     const avgStress = s.stress_index.reduce((a,b)=>a+b,0)/n;
     const avgStage = s.crop_growth_stage.reduce((a,b)=>a+b,0)/n;
-    const healthScore = Math.max(0, 100 * (1 - avgStress));
-    const seasonProgress = s.day_of_season / s.n_days;
-    const baseYield = CROP_YIELD_BASE[cropName] || 5000;
-    const estYield = Math.round(baseYield * (seasonProgress * 0.8 + 0.2) * (healthScore/100) * ((avgStage/3)*0.7+0.3));
+    const healthFromRoi = (s.roi && typeof s.roi.health_score === 'number')
+        ? Math.round(s.roi.health_score)
+        : Math.max(0, Math.round(100 * (1 - avgStress)));
     const daysLeft = Math.max(0, s.n_days - s.day_of_season);
 
-    document.getElementById('yYield').textContent = estYield.toLocaleString();
-    document.getElementById('yHealth').textContent = Math.round(healthScore) + '%';
+    document.getElementById('yYield').textContent = avgStage.toFixed(2);
+    document.getElementById('yHealth').textContent = healthFromRoi + '%';
     document.getElementById('yDaysLeft').textContent = daysLeft + ' d';
 
     const container = document.getElementById('cropZoneCards');
@@ -1543,7 +1605,10 @@ async function updateState() {
     document.getElementById('stWater').innerText = `${(s.water_used_liters||0).toFixed(0)} L`;
     document.getElementById('stDay').innerText = `${s.day_of_season}/${s.n_days}`;
     document.getElementById('stZones').innerText = n;
-    document.getElementById('taskName').innerText = s.n_zones === 1 ? 'Easy' : s.n_zones === 4 ? 'Medium' : 'Hard';
+    document.getElementById('stBudget').innerText =
+        typeof s.water_budget_liters === 'number' ? `${s.water_budget_liters.toFixed(0)} L` : '—';
+    document.getElementById('stLogSteps').innerText = String(s.episode_step_count ?? 0);
+    document.getElementById('taskName').innerText = s.irrigation_task_title || s.irrigation_task_id || '—';
 
     const avgMoist = s.soil_moisture.reduce((a,b)=>a+b,0)/n;
     const avgStress = s.stress_index.reduce((a,b)=>a+b,0)/n;
@@ -1562,6 +1627,7 @@ async function updateState() {
     updateNutritionPanel(s);
     updateCropPanel(s);
     updateWeatherPanel(s);
+    updateUniversalGradesPanel(s);
 
 }
 
@@ -1604,9 +1670,9 @@ async function reset() {
         chartRewardStep.data.labels = []; chartRewardStep.data.datasets[0].data = []; chartRewardStep.update();
         await updateState();
         const adviceBase = {
-            easy: 'Reactive control task: keep one zone in the safe moisture band.',
-            medium: 'Anticipatory task: decide whether to irrigate or wait for forecasted rain.',
-            hard: 'Strategic triage task: ration scarce water across zones and stages.',
+            easy: "Don't Kill the Crop — graders score stress containment on the live episode log.",
+            medium: 'Respect the Rain — graders score holding irrigation when heavy rain is forecast.',
+            hard: 'Do More With Less — graders score yield vs water efficiency on the episode log.',
         };
         const seasonLabel = { spring:'Spring', summer:'Summer', monsoon:'Monsoon', winter:'Winter' }[scenarioConfig.season] || 'Season';
         const moistLabel = scenarioConfig.moisture === 'dry'
@@ -1909,6 +1975,12 @@ async function runMinimalSimulation() {
         document.getElementById('minWaterSaved').textContent = `${saved.toFixed(0)} L`;
         document.getElementById('minMoneySaved').textContent = `₹${Math.round(money)}`;
         appendMinimalLogLine(`Crop finished growing in ${finalState.day_of_season} days. Water used: ${used.toFixed(0)} L. Water saved: ${saved.toFixed(0)} L. Money saved: ₹${Math.round(money)}.`);
+    }
+    if (finalState && finalState.universal_grades) {
+        const g = finalState.universal_grades;
+        appendMinimalLogLine(
+            `Server grader scores on full episode log — stress: ${g.dont_kill_crop.toFixed(3)}, rain: ${g.respect_the_rain.toFixed(3)}, efficiency: ${g.do_more_with_less.toFixed(3)}.`
+        );
     }
 
     await updateState();

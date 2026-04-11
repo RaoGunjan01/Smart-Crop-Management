@@ -210,6 +210,8 @@ class IrrigationEnv(gym.Env):
             "stress_index": sim_result["stress_index"].copy(),
             "soil_moisture": sim_result["soil_moisture"].copy(),
             "water_used_step": sim_result["water_this_step"],
+            "rain_forecast_mm": float(pre_state["rain_forecast_mm"]),
+            "zone_actions": list(zone_actions),
             "stress_increased": bool(
                 np.any(sim_result["stress_index"] > sim_result["prev_stress"])
             ),
