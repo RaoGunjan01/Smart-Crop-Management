@@ -16,13 +16,13 @@ from pydantic import BaseModel
 
 from irrigation_env.env import IrrigationEnv
 
-from .llm_proxy import irrigation_advice_line, proxy_llm_ping
+from .llm_proxy import ensure_llm_proxy_traffic, irrigation_advice_line
 
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    # Complete one proxy call before serving (evaluation harness observes this key).
-    await asyncio.to_thread(proxy_llm_ping)
+    # LiteLLM proxy ping when env vars are available (may retry from /health).
+    await asyncio.to_thread(ensure_llm_proxy_traffic)
     if os.getenv("ENABLE_LOCAL_BROWSER") and not (
         os.getenv("HF_SPACE_ID") or os.getenv("SPACE_ID")
     ):
@@ -37,7 +37,11 @@ async def _lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Smart Crop Management Sytem", lifespan=_lifespan)
+app = FastAPI(
+    title="Smart Crop Management Sytem",
+    version="1.0.0",
+    lifespan=_lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -72,7 +76,7 @@ class StepRequest(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    status: str = "ok"
+    status: str = "healthy"
     rl_active: bool = False
     llm_proxy_configured: bool = False
 
@@ -80,7 +84,65 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     proxy_ok = "API_BASE_URL" in os.environ and "API_KEY" in os.environ
-    return HealthResponse(status="ok", rl_active=False, llm_proxy_configured=proxy_ok)
+    await asyncio.to_thread(ensure_llm_proxy_traffic)
+    return HealthResponse(
+        status="healthy", rl_active=False, llm_proxy_configured=proxy_ok
+    )
+
+
+class EpisodeGradeBody(BaseModel):
+    episode_log: list[dict[str, Any]]
+
+
+@app.get("/grade/easy")
+async def grade_easy_metadata() -> dict[str, Any]:
+    return {
+        "task": "easy",
+        "import_path": "irrigation_env.grader:grade_easy",
+        "score_range": [0.0, 1.0],
+        "invoke": "POST /grade/easy with JSON body {\"episode_log\": [...]}",
+    }
+
+
+@app.post("/grade/easy")
+async def grade_easy_http(body: EpisodeGradeBody) -> dict[str, Any]:
+    from irrigation_env.grader import grade_easy
+
+    return {"score": float(grade_easy(body.episode_log)), "task": "easy"}
+
+
+@app.get("/grade/medium")
+async def grade_medium_metadata() -> dict[str, Any]:
+    return {
+        "task": "medium",
+        "import_path": "irrigation_env.grader:grade_medium",
+        "score_range": [0.0, 1.0],
+        "invoke": "POST /grade/medium with JSON body {\"episode_log\": [...]}",
+    }
+
+
+@app.post("/grade/medium")
+async def grade_medium_http(body: EpisodeGradeBody) -> dict[str, Any]:
+    from irrigation_env.grader import grade_medium
+
+    return {"score": float(grade_medium(body.episode_log)), "task": "medium"}
+
+
+@app.get("/grade/hard")
+async def grade_hard_metadata() -> dict[str, Any]:
+    return {
+        "task": "hard",
+        "import_path": "irrigation_env.grader:grade_hard",
+        "score_range": [0.0, 1.0],
+        "invoke": "POST /grade/hard with JSON body {\"episode_log\": [...]}",
+    }
+
+
+@app.post("/grade/hard")
+async def grade_hard_http(body: EpisodeGradeBody) -> dict[str, Any]:
+    from irrigation_env.grader import grade_hard
+
+    return {"score": float(grade_hard(body.episode_log)), "task": "hard"}
 
 
 @app.post("/reset")

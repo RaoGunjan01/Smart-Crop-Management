@@ -1,4 +1,4 @@
-# OpenEnv manifest — keep spec_version + app + explicit graders for platform validation.
+# OpenEnv manifest — structured grader blocks (validators often ignore string-only grader paths).
 spec_version: 1
 name: precision-irrigation-scheduling
 version: "1.0.0"
@@ -35,22 +35,53 @@ reward:
   range: [-inf, +inf]
   terminal_bonus: 1.0
 
-# Top-level grader registry (at least three callable entry points).
 graders:
   easy: irrigation_env.grader:grade_easy
   medium: irrigation_env.grader:grade_medium
   hard: irrigation_env.grader:grade_hard
 
 tasks:
-  - name: easy
+  - id: easy
+    name: easy
+    description: 1 zone, short season, generous budget
     difficulty: 1
-    description: 1 zone, short season, no rain, no sensor noise, generous budget
-    grader: irrigation_env.grader:grade_easy
-  - name: medium
+    max_steps: 120
+    reward_range: [0.0, 1.0]
+    grader_path: /grade/easy
+    grader_url: /grade/easy
+    grader:
+      type: http
+      path: /grade/easy
+      endpoint: /grade/easy
+      method: GET
+    python_grader: irrigation_env.grader:grade_easy
+
+  - id: medium
+    name: medium
+    description: 4 zones, moderate budget, rain forecasts
     difficulty: 2
-    description: 4 zones, moderate budget, realistic rain forecasts, requires wait-vs-water decisions
-    grader: irrigation_env.grader:grade_medium
-  - name: hard
+    max_steps: 240
+    reward_range: [0.0, 1.0]
+    grader_path: /grade/medium
+    grader_url: /grade/medium
+    grader:
+      type: http
+      path: /grade/medium
+      endpoint: /grade/medium
+      method: GET
+    python_grader: irrigation_env.grader:grade_medium
+
+  - id: hard
+    name: hard
+    description: 8 zones, scarce budget, sensor noise
     difficulty: 3
-    description: 8 zones, severe budget scarcity, sensor uncertainty, requires cross-zone triage
-    grader: irrigation_env.grader:grade_hard
+    max_steps: 360
+    reward_range: [0.0, 1.0]
+    grader_path: /grade/hard
+    grader_url: /grade/hard
+    grader:
+      type: http
+      path: /grade/hard
+      endpoint: /grade/hard
+      method: GET
+    python_grader: irrigation_env.grader:grade_hard

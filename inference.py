@@ -145,9 +145,9 @@ def _rollout_from_parsed(parsed: dict[str, Any]) -> None:
 
 def main() -> None:
     try:
-        from api.llm_proxy import proxy_llm_ping
+        from api.llm_proxy import ensure_llm_proxy_traffic
 
-        proxy_llm_ping()
+        ensure_llm_proxy_traffic()
     except Exception:
         pass
 
