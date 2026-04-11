@@ -1,4 +1,4 @@
-# OpenEnv manifest — structured grader blocks (validators often ignore string-only grader paths).
+# OpenEnv manifest — each task must declare `grader:` as module:function (colon) for static validators.
 spec_version: 1
 name: precision-irrigation-scheduling
 version: "1.0.0"
@@ -47,14 +47,7 @@ tasks:
     difficulty: 1
     max_steps: 120
     reward_range: [0.0, 1.0]
-    grader_path: /grade/easy
-    grader_url: /grade/easy
-    grader:
-      type: http
-      path: /grade/easy
-      endpoint: /grade/easy
-      method: GET
-    python_grader: irrigation_env.grader:grade_easy
+    grader: irrigation_env.grader:grade_easy
 
   - id: medium
     name: medium
@@ -62,14 +55,7 @@ tasks:
     difficulty: 2
     max_steps: 240
     reward_range: [0.0, 1.0]
-    grader_path: /grade/medium
-    grader_url: /grade/medium
-    grader:
-      type: http
-      path: /grade/medium
-      endpoint: /grade/medium
-      method: GET
-    python_grader: irrigation_env.grader:grade_medium
+    grader: irrigation_env.grader:grade_medium
 
   - id: hard
     name: hard
@@ -77,11 +63,4 @@ tasks:
     difficulty: 3
     max_steps: 360
     reward_range: [0.0, 1.0]
-    grader_path: /grade/hard
-    grader_url: /grade/hard
-    grader:
-      type: http
-      path: /grade/hard
-      endpoint: /grade/hard
-      method: GET
-    python_grader: irrigation_env.grader:grade_hard
+    grader: irrigation_env.grader:grade_hard
