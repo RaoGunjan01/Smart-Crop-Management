@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import select
 import sys
-from typing import Any
+from typing import Any, Callable
 
 
 def _extract_payload(raw_payload: Any) -> dict[str, Any]:
@@ -78,37 +80,110 @@ def _predict_single(input_payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _wants_rollout(payload: dict[str, Any]) -> bool:
+    if payload.get("rollout") or payload.get("run_episode") or payload.get("evaluate"):
+        return True
+    inner = payload.get("input") if isinstance(payload.get("input"), dict) else payload
+    if not isinstance(inner, dict):
+        return False
+    if "observation" in inner:
+        return False
+    if isinstance(inner.get("state"), dict) and "soil_moisture" in inner["state"]:
+        return False
+    task = inner.get("task") or payload.get("task")
+    return task in ("easy", "medium", "hard")
+
+
+def _structured_print(line: str) -> None:
+    print(line, flush=True)
+
+
+def _run_structured_episode(task: str, seed: int | None = None) -> None:
+    import numpy as np
+
+    from agents.baseline_agent import RuleBasedAgent
+    from irrigation_env.env import IrrigationEnv
+    from irrigation_env.grader import grade_easy, grade_hard, grade_medium
+
+    graders: dict[str, Callable[..., float]] = {
+        "easy": grade_easy,
+        "medium": grade_medium,
+        "hard": grade_hard,
+    }
+    grade_fn = graders.get(task, grade_easy)
+
+    env = IrrigationEnv(task=task)
+    agent = RuleBasedAgent()
+    obs, info = env.reset(seed=seed)
+    task_name = str(info.get("task", env.task_config.name))
+    _structured_print(f"[START] task={task_name}")
+
+    done = False
+    step_num = 0
+    while not done:
+        state = env.state()
+        action = agent.act(obs, state)
+        obs, reward, terminated, truncated, _ = env.step(np.asarray(action, dtype=np.int64))
+        done = terminated or truncated
+        step_num += 1
+        _structured_print(f"[STEP] step={step_num} reward={float(reward):.4f}")
+
+    log = env.episode_log
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        score = float(grade_fn(log))
+    _structured_print(f"[END] task={task_name} score={score:.4f} steps={step_num}")
+
+
+def _rollout_from_parsed(parsed: dict[str, Any]) -> None:
+    inner = parsed["input"] if isinstance(parsed.get("input"), dict) else parsed
+    task = str(inner.get("task", "easy")) if isinstance(inner, dict) else "easy"
+    seed_val = inner.get("seed") if isinstance(inner, dict) else None
+    seed = int(seed_val) if seed_val is not None else None
+    _run_structured_episode(task, seed)
+
+
 def main() -> None:
-    try:
-        raw = ""
-        if not sys.stdin.isatty():
-            ready, _, _ = select.select([sys.stdin], [], [], 0.2)
-            if ready:
-                raw = sys.stdin.read().strip()
-        if raw:
+    raw = ""
+    if not sys.stdin.isatty():
+        ready, _, _ = select.select([sys.stdin], [], [], 0.2)
+        if ready:
+            raw = sys.stdin.read().strip()
+
+    if raw:
+        try:
             parsed = json.loads(raw)
             if isinstance(parsed, list):
-                preds = [_predict_single(x if isinstance(x, dict) else {"input": x}) for x in parsed]
-                print(json.dumps({"status": "ok", "predictions": preds, "output": preds}))
-            else:
-                print(json.dumps(_predict_single(parsed if isinstance(parsed, dict) else {"input": parsed})))
-            return
-    except Exception:
-        pass
+                if (
+                    len(parsed) == 1
+                    and isinstance(parsed[0], dict)
+                    and _wants_rollout(parsed[0])
+                ):
+                    _rollout_from_parsed(parsed[0])
+                    return
+                preds = [
+                    _predict_single(x if isinstance(x, dict) else {"input": x}) for x in parsed
+                ]
+                print(
+                    json.dumps({"status": "ok", "predictions": preds, "output": preds}),
+                    flush=True,
+                )
+                return
+            if isinstance(parsed, dict) and _wants_rollout(parsed):
+                _rollout_from_parsed(parsed)
+                return
+            if isinstance(parsed, dict):
+                print(
+                    json.dumps(_predict_single(parsed)),
+                    flush=True,
+                )
+                return
+        except json.JSONDecodeError:
+            pass
+        except Exception:
+            pass
 
-    fallback = _predict_single({"task": "easy", "n_zones": 1, "observation": [0.35]})
-    print(
-        json.dumps(
-            {
-                "agent_name": "rule_based_local",
-                "status": "ok",
-                "result": fallback,
-                "results": [fallback],
-                "prediction": fallback["prediction"],
-                "output": fallback["output"],
-            }
-        )
-    )
+    _run_structured_episode("easy", 42)
 
 
 if __name__ == "__main__":
