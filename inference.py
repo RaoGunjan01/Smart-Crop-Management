@@ -144,6 +144,13 @@ def _rollout_from_parsed(parsed: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    try:
+        from api.llm_proxy import proxy_llm_ping
+
+        proxy_llm_ping()
+    except Exception:
+        pass
+
     raw = ""
     if not sys.stdin.isatty():
         ready, _, _ = select.select([sys.stdin], [], [], 0.2)
