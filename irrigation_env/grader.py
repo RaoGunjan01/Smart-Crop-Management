@@ -21,11 +21,11 @@ def grade_episode(episode_log: list[dict[str, Any]]) -> float:
         episode_log: List of per-step state/info dicts (one per env step).
 
     Returns:
-        Weighted score in [0.0, 1.0].
+        Weighted score strictly in (0.0, 1.0); clamped to [0.01, 0.99].
     """
     if not episode_log:
-        print("Grade: empty episode log → 0.0")
-        return 0.0
+        print("Grade: empty episode log → 0.01 (strict open interval)")
+        return 0.01
 
     total_steps = len(episode_log)
 
@@ -65,7 +65,7 @@ def grade_episode(episode_log: list[dict[str, Any]]) -> float:
         + 0.2 * stress_events_score
         + 0.1 * completion_score
     )
-    score = float(np.clip(score, 0.0, 1.0))
+    score = float(np.clip(score, 0.01, 0.99))
 
     # Print breakdown
     print("\n" + "=" * 50)
@@ -88,8 +88,8 @@ def _mean_stress(step: dict[str, Any]) -> float:
 def grade_easy(episode_log: list[Any]) -> float:
     """Universal stress-control test ("Don't Kill the Crop")."""
     if not episode_log:
-        print("Easy Grade: empty episode log -> 0.0")
-        return 0.0
+        print("Easy Grade: empty episode log -> 0.01 (strict open interval)")
+        return 0.01
 
     total_steps = len(episode_log)
     means = [_mean_stress(s) for s in episode_log]
@@ -119,8 +119,8 @@ def grade_easy(episode_log: list[Any]) -> float:
     final_score = float(
         np.clip(
             0.6 * containment + 0.3 * recovery_score + 0.1 * completion_score,
-            0.0,
-            1.0,
+            0.01,
+            0.99,
         )
     )
 
@@ -139,8 +139,8 @@ def grade_easy(episode_log: list[Any]) -> float:
 def grade_medium(episode_log: list[Any]) -> float:
     """Universal rain-awareness test ("Respect the Rain")."""
     if not episode_log:
-        print("Medium Grade: empty episode log -> 0.0")
-        return 0.0
+        print("Medium Grade: empty episode log -> 0.01 (strict open interval)")
+        return 0.01
 
     total_steps = len(episode_log)
     n_zones = int(
@@ -177,8 +177,8 @@ def grade_medium(episode_log: list[Any]) -> float:
     final_score = float(
         np.clip(
             0.5 * rain_restraint + 0.3 * drought_ok + 0.2 * water_saved,
-            0.0,
-            1.0,
+            0.01,
+            0.99,
         )
     )
 
@@ -197,8 +197,8 @@ def grade_medium(episode_log: list[Any]) -> float:
 def grade_hard(episode_log: list[Any]) -> float:
     """Universal efficiency test ("Do More With Less")."""
     if not episode_log:
-        print("Hard Grade: empty episode log -> 0.0")
-        return 0.0
+        print("Hard Grade: empty episode log -> 0.01 (strict open interval)")
+        return 0.01
 
     total_steps = len(episode_log)
     n_zones = int(
@@ -237,8 +237,8 @@ def grade_hard(episode_log: list[Any]) -> float:
     final_score = float(
         np.clip(
             0.4 * yield_eff + 0.35 * consistency + 0.25 * no_waste_pressure,
-            0.0,
-            1.0,
+            0.01,
+            0.99,
         )
     )
 
