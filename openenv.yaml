@@ -1,5 +1,6 @@
-# OpenEnv manifest — each task must declare `grader:` as module:function (colon) for static validators.
+# OpenEnv manifest
 spec_version: 1
+openenv_version: "0.2.0"
 name: precision-irrigation-scheduling
 version: "1.0.0"
 type: space
@@ -7,6 +8,14 @@ runtime: fastapi
 app: api.main:app
 entrypoint: api.main:app
 port: 8000
+author: "smart-crop-management"
+api:
+  health: /health
+  reset: /reset
+  step: /step
+  state: /state
+  tasks: /tasks
+  grader: /grader
 description: >
   A multi-zone crop irrigation scheduling environment where an AI agent
   decides when and how much to water crops based on soil moisture,
@@ -36,39 +45,71 @@ reward:
   terminal_bonus: 1.0
 
 graders:
-  easy: irrigation_env.grader:grade_easy
-  medium: irrigation_env.grader:grade_medium
-  hard: irrigation_env.grader:grade_hard
+  easy:
+    module: tasks.graders
+    function: grade_easy_task
+  medium:
+    module: tasks.graders
+    function: grade_medium_task
+  hard:
+    module: tasks.graders
+    function: grade_hard_task
+
+grader:
+  module: tasks.graders
+  function: grade_task
+
+task_validation:
+  minimum_tasks_with_graders: 3
+  declared_tasks:
+    - easy
+    - medium
+    - hard
 
 tasks:
   - id: easy
-    name: Don't Kill the Crop
+    name: easy
+    title: Don't Kill the Crop
     description: >
       Keep crop stress under control from start to finish.
       Works on any zone count, any season, any budget.
       Tests the most fundamental agent skill: stress prevention.
-    difficulty: 1
     max_steps: 120
     reward_range: [0.0, 1.0]
-    grader: irrigation_env.grader:grade_easy
+    grader:
+      module: tasks.graders
+      function: grade_easy_task
+    grader_path: tasks.graders:grade_easy_task
+    grader_endpoint: /grade/easy
+    difficulty: 1
 
   - id: medium
-    name: Respect the Rain
+    name: medium
+    title: Respect the Rain
     description: >
       Learn to read the rain forecast and hold back irrigation when rain is coming.
       Works on any configuration. Tests forecast-awareness and resource restraint.
-    difficulty: 2
     max_steps: 240
     reward_range: [0.0, 1.0]
-    grader: irrigation_env.grader:grade_medium
+    grader:
+      module: tasks.graders
+      function: grade_medium_task
+    grader_path: tasks.graders:grade_medium_task
+    grader_endpoint: /grade/medium
+    difficulty: 2
 
   - id: hard
-    name: Do More With Less
+    name: hard
+    title: Do More With Less
     description: >
       Achieve the best possible crop yield using the least possible water.
       Simultaneously optimise two competing objectives at every step.
       The only way to score well is precise, timely irrigation.
-    difficulty: 3
     max_steps: 360
     reward_range: [0.0, 1.0]
-    grader: irrigation_env.grader:grade_hard
+    grader:
+      module: tasks.graders
+      function: grade_hard_task
+    grader_path: tasks.graders:grade_hard_task
+    grader_endpoint: /grade/hard
+    difficulty: 3

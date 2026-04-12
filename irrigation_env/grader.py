@@ -1,4 +1,4 @@
-"""Episode grader: scores a completed episode on the open interval (0.0, 1.0), never exactly 0.0 or 1.0."""
+"""Episode grader: scores a completed episode from 0.0 to 1.0."""
 
 from __future__ import annotations
 
