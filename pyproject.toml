@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "smart-crop-management-sytem"
+name = "smart-crop-management"
 version = "1.0.0"
-description = "OpenEnv-compatible environment + FastAPI demo for smart crop irrigation."
+description = "OpenEnv-compliant Gymnasium environment for multi-zone precision irrigation scheduling with FastAPI serving."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}

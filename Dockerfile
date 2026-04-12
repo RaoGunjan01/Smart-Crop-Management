@@ -8,7 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY irrigation_env/ ./irrigation_env/
-COPY tasks/ ./tasks/
 COPY api/ ./api/
 COPY agents/ ./agents/
 COPY ui/ ./ui/

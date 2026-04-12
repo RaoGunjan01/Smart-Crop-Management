@@ -16,13 +16,32 @@ A complete **OpenEnv-compatible** Gymnasium environment for smart crop irrigatio
 
 ## Features
 
-- 🌱 FAO-56 Hargreaves evapotranspiration model
+- 🌱 Reference ET formulation aligned with FAO-56 Penman–Monteith methodology (simplified)
 - 🌦️ Realistic weather simulation (temperature, rain, humidity)
 - 🎯 Multi-zone irrigation with 5 action levels per zone
 - 📊 Three difficulty levels (Easy / Medium / Hard)
 - 🚀 FastAPI REST interface for agent integration
 - 🤖 Rule-based baseline agent
 - 🧪 Full pytest suite
+
+---
+
+## Real-World Applicability
+
+This environment models **drip and sprinkler irrigation decisions** that farmers make day-to-day in **semi-arid regions** (for example India and sub-Saharan Africa), where water and pumping costs dominate margins.
+
+- **`cost_per_liter` (0.008 INR/L)** is set in the same ballpark as **real Indian groundwater pumping and distribution costs**, so the economic pressure in the reward signal is grounded in practice.
+- The **five crop types** (wheat, corn, rice, tomato, soybean) with **growth horizons of 120, 110, 130, 90, and 100 days** match **order-of-magnitude agronomic season lengths** used in planning and extension advice.
+- **Evapotranspiration (ET)** in the simulator mirrors **FAO-56 reference evapotranspiration** thinking—temperature, humidity, crop stage, and **time-of-day (solar) effects**—so the water balance behaves like published crop water-use patterns, not arbitrary noise.
+- A policy trained here could **inform or benchmark IoT-connected drip controllers**: the same discrete “how much per zone per time slot” structure maps naturally onto valve schedules and soil-moisture–driven automation.
+
+---
+
+## What Makes This Interesting
+
+- **Multi-zone coordination:** Many irrigation benchmarks collapse to a single zone with binary on/off control. Here, actions are **MultiDiscrete with five levels per zone**, across **up to eight zones at once**—a **coordination problem** (like multi-agent scheduling) inside one environment.
+- **Nutrient–water coupling:** **Nutrient status** scales growth and stress recovery, so water is not the only lever—agents face a **second, less obvious axis** that is uncommon in pure irrigation RL setups.
+- **Diurnal structure:** Four **time-of-day slots** (morning, midday, afternoon, night) encode **real ET variation** (e.g. midday losses), so *when* you irrigate matters, not just *how much*.
 
 ---
 

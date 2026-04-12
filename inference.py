@@ -190,8 +190,7 @@ def main() -> None:
         except Exception:
             pass
 
-    for t in ("easy", "medium", "hard"):
-        _run_structured_episode(t, 42)
+    _run_structured_episode("easy", 42)
 
 
 if __name__ == "__main__":
