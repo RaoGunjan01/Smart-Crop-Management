@@ -204,10 +204,6 @@ class IrrigationEnv(gym.Env):
             accumulated_stress=self._accumulated_stress,
         )
 
-        budget_liters = self.task_config.water_budget_liters
-        budget_exhausted = water_used >= budget_liters
-        budget_remaining = max(0.0, budget_liters - water_used) / max(budget_liters, 1.0)
-
         # Log step for grader
         log_entry: dict[str, Any] = {
             "step": self._step_count,
@@ -221,8 +217,6 @@ class IrrigationEnv(gym.Env):
             ),
             "terminated": terminated,
             "reward": reward,
-            "water_budget": budget_liters,
-            "budget_exhausted": budget_exhausted,
         }
         self._episode_log.append(log_entry)
 
@@ -235,8 +229,8 @@ class IrrigationEnv(gym.Env):
             "water_used_step": sim_result["water_this_step"],
             "fertilizer_kg_ha_step": dict(self._last_fertilizer_kg_ha),
             "last_action": action_dict,
-            "water_budget_remaining": budget_remaining,
-            "budget_exhausted": budget_exhausted,
+            "water_budget_remaining": 1.0,
+            "budget_exhausted": False,
             "episode_log": self._episode_log,
         }
 
@@ -333,12 +327,11 @@ class IrrigationEnv(gym.Env):
             soil_m = np.clip(soil_m + sim.rng.normal(0.0, noise_std, size=n).astype(np.float32), 0.0, 1.0)
             stress = np.clip(stress + sim.rng.normal(0.0, noise_std * 0.5, size=n).astype(np.float32), 0.0, 1.0)
 
-        dsi_scale = float(max(self.task_config.n_days, 30))
         per_zone = np.concatenate([
             soil_m,
             sim.crop_growth_stage.astype(np.float32),
             stress,
-            np.clip(sim.days_since_irrigation / dsi_scale, 0.0, 1.0).astype(np.float32),
+            np.clip(sim.days_since_irrigation / 30.0, 0.0, 1.0).astype(np.float32),
         ])
 
         global_obs = np.array([

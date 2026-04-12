@@ -67,10 +67,8 @@ class SoilMoistureSimulator:
         """Advance simulation by 6 hours."""
         prev_stress = self.stress_index.copy()
 
-        # Naive benchmark: always IRRIGATE_MED per zone (liters per step).
-        self.traditional_water_liters += (
-            IRRIGATION_LITRES[2] * self.n_zones * float(self.land_ha)
-        )
+        # Baseline "traditional" irrigation benchmark per step (liters).
+        self.traditional_water_liters += 25.0 * self.n_zones * float(self.land_ha)
 
         # 1. Global action override (Same as before)
         if global_action == 6:  # PAUSE_ALL

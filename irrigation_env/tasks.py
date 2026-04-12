@@ -18,7 +18,6 @@ class TaskConfig:
     sensor_failure_probability: float = 0.0
     max_steps_per_day: int = 4  # time slots: 0=morning,1=midday,2=afternoon,3=night
     kc_base: float = 1.0        # crop coefficient base value
-    difficulty_description: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -33,10 +32,6 @@ EASY = TaskConfig(
     water_budget_liters=24_000,
     rain_probability=0.0,
     crop_type="wheat",
-    difficulty_description=(
-        "Single zone, perfect sensors, generous water budget. "
-        "Master the basics of stress prevention."
-    ),
 )
 
 MEDIUM = TaskConfig(
@@ -47,10 +42,6 @@ MEDIUM = TaskConfig(
     water_budget_liters=12_000,
     rain_probability=0.22,
     crop_type="mixed",
-    difficulty_description=(
-        "4 zones, slight sensor noise, rain events. "
-        "Learn to read forecasts and conserve water."
-    ),
 )
 
 HARD = TaskConfig(
@@ -62,10 +53,6 @@ HARD = TaskConfig(
     rain_probability=0.12,
     sensor_failure_probability=0.05,
     crop_type="mixed",
-    difficulty_description=(
-        "8 zones, significant sensor noise, 5% sensor failure rate, "
-        "tight water budget. Precision or failure."
-    ),
 )
 
 TASK_REGISTRY: dict[str, TaskConfig] = {
