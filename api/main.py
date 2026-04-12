@@ -28,6 +28,14 @@ IRRIGATION_TASK_META: dict[str, dict[str, str]] = {
     "hard": {"title": "Do More With Less", "focus": "Balance stress vs water use."},
 }
 
+# Grader outputs are on the open interval (0.0, 1.0): never exactly 0.0 or 1.0; clamped to [0.01, 0.99].
+GRADE_SCORE_RANGE: dict[str, Any] = {
+    "min": 0.0,
+    "max": 1.0,
+    "exclusive_endpoints": True,
+    "clamped_to": [0.01, 0.99],
+}
+
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
@@ -104,72 +112,12 @@ class EpisodeGradeBody(BaseModel):
     episode_log: list[dict[str, Any]]
 
 
-class GenericGradeBody(BaseModel):
-    task: str = "easy"
-    episode_log: list[dict[str, Any]]
-
-
-def _grader_import_path(task: str) -> str:
-    return f"irrigation_env.grader:grade_{task}"
-
-
-def _task_descriptor(task_id: str) -> dict[str, Any]:
-    configs = {
-        "easy": {"difficulty": "easy", "max_steps": 120},
-        "medium": {"difficulty": "medium", "max_steps": 240},
-        "hard": {"difficulty": "hard", "max_steps": 360},
-    }
-    meta = IRRIGATION_TASK_META[task_id]
-    extra = configs[task_id]
-    return {
-        "id": task_id,
-        "name": meta["title"],
-        "description": meta["focus"],
-        "difficulty": extra["difficulty"],
-        "max_steps": extra["max_steps"],
-        "grader": _grader_import_path(task_id),
-        "grader_endpoint": f"/grade/{task_id}",
-        "score_range": [0.0, 1.0],
-    }
-
-
-def _run_task_grader(task: str, episode_log: list[dict[str, Any]]) -> float:
-    graders: dict[str, Any] = {
-        "easy": grade_easy,
-        "medium": grade_medium,
-        "hard": grade_hard,
-    }
-    task_key = str(task).lower()
-    if task_key not in graders:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown task '{task}'. Choose from: {list(graders)}",
-        )
-    return float(graders[task_key](episode_log))
-
-
-@app.get("/tasks")
-async def list_tasks() -> dict[str, Any]:
-    tasks = [_task_descriptor(task_id) for task_id in ("easy", "medium", "hard")]
-    return {"tasks": tasks, "count": len(tasks)}
-
-
-@app.post("/grader")
-async def grade_task_http(body: GenericGradeBody) -> dict[str, Any]:
-    score = _run_task_grader(body.task, body.episode_log)
-    return {
-        "task": body.task,
-        "score": score,
-        "score_range": [0.0, 1.0],
-    }
-
-
 @app.get("/grade/easy")
 async def grade_easy_metadata() -> dict[str, Any]:
     return {
         "task": "easy",
         "import_path": "irrigation_env.grader:grade_easy",
-        "score_range": [0.0, 1.0],
+        "score_range": GRADE_SCORE_RANGE,
         "invoke": "POST /grade/easy with JSON body {\"episode_log\": [...]}",
     }
 
@@ -186,7 +134,7 @@ async def grade_medium_metadata() -> dict[str, Any]:
     return {
         "task": "medium",
         "import_path": "irrigation_env.grader:grade_medium",
-        "score_range": [0.0, 1.0],
+        "score_range": GRADE_SCORE_RANGE,
         "invoke": "POST /grade/medium with JSON body {\"episode_log\": [...]}",
     }
 
@@ -203,7 +151,7 @@ async def grade_hard_metadata() -> dict[str, Any]:
     return {
         "task": "hard",
         "import_path": "irrigation_env.grader:grade_hard",
-        "score_range": [0.0, 1.0],
+        "score_range": GRADE_SCORE_RANGE,
         "invoke": "POST /grade/hard with JSON body {\"episode_log\": [...]}",
     }
 
