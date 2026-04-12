@@ -7,6 +7,13 @@ runtime: fastapi
 app: api.main:app
 entrypoint: api.main:app
 port: 8000
+api:
+  health: /health
+  reset: /reset
+  step: /step
+  state: /state
+  tasks: /tasks
+  grader: /grader
 description: >
   A multi-zone crop irrigation scheduling environment where an AI agent
   decides when and how much to water crops based on soil moisture,
@@ -40,6 +47,13 @@ graders:
   medium: irrigation_env.grader:grade_medium
   hard: irrigation_env.grader:grade_hard
 
+task_validation:
+  minimum_tasks_with_graders: 3
+  declared_tasks:
+    - easy
+    - medium
+    - hard
+
 tasks:
   - id: easy
     name: Don't Kill the Crop
@@ -51,6 +65,7 @@ tasks:
     max_steps: 120
     reward_range: [0.0, 1.0]
     grader: irrigation_env.grader:grade_easy
+    grader_endpoint: /grade/easy
 
   - id: medium
     name: Respect the Rain
@@ -61,6 +76,7 @@ tasks:
     max_steps: 240
     reward_range: [0.0, 1.0]
     grader: irrigation_env.grader:grade_medium
+    grader_endpoint: /grade/medium
 
   - id: hard
     name: Do More With Less
@@ -72,3 +88,4 @@ tasks:
     max_steps: 360
     reward_range: [0.0, 1.0]
     grader: irrigation_env.grader:grade_hard
+    grader_endpoint: /grade/hard

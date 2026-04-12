@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from fastapi.testclient import TestClient
 
+from api.main import app
 from irrigation_env.env import IrrigationEnv
 from irrigation_env.grader import grade_episode
 from irrigation_env.reward import compute_reward
@@ -198,3 +200,40 @@ def test_action_space_sample_valid(task: str) -> None:
     for _ in range(10):
         action = env.action_space.sample()
         assert env.action_space.contains(action), f"Invalid sampled action: {action}"
+
+
+def test_tasks_endpoint_exposes_three_graders() -> None:
+    """Compatibility endpoint should expose at least 3 tasks with graders."""
+    client = TestClient(app)
+    res = client.get("/tasks")
+    assert res.status_code == 200
+    payload = res.json()
+    tasks = payload["tasks"]
+    assert payload["count"] >= 3
+    assert len(tasks) >= 3
+    assert all(task.get("grader") for task in tasks[:3])
+
+
+def test_generic_grader_endpoint_accepts_task() -> None:
+    """Generic grader endpoint should route grading by task id."""
+    client = TestClient(app)
+    env = IrrigationEnv(task="easy")
+    env.reset(seed=9)
+    _, _, _, _, _ = env.step(np.array([0, 0], dtype=np.int64))
+    episode_log = [
+        {
+            key: (value.tolist() if isinstance(value, np.ndarray) else value)
+            for key, value in step.items()
+        }
+        for step in env.episode_log
+    ]
+
+    res = client.post(
+        "/grader",
+        json={"task": "easy", "episode_log": episode_log},
+    )
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["task"] == "easy"
+    assert isinstance(payload["score"], float)
+    assert 0.0 <= payload["score"] <= 1.0
