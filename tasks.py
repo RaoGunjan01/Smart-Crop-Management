@@ -1,4 +1,4 @@
-"""OpenEnv task compatibility package."""
+from __future__ import annotations
 
 TASKS = [
     {
